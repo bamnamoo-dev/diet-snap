@@ -1,0 +1,26 @@
+export interface CustomChip {
+  label: string;       // 칩 텍스트 (예: "초등 급식", "성인 식판", "국물 제외", "드레싱 뺌")
+  scale?: number;      // 배율 (예: 0.8, 1.0, 1.25)
+  calorie_delta?: number; // 직접 칼로리 가감 (예: -100, -60)
+  is_selected?: boolean;
+}
+
+export interface NutritionItem {
+  name: string;          // 한식 메뉴명 (예: "제육볶음과 현미밥")
+  serving_size: string;  // 추정 중량 (예: "1인분 (약 350g)")
+  calories: number;      // 총 칼로리 (kcal)
+  carbs: number;         // 탄수화물 (g)
+  protein: number;       // 단백질 (g)
+  fat: number;           // 지방 (g)
+  diet_comment: string;  // 인스타 스탬프용 위트 있는 한 줄
+  custom_chips?: CustomChip[]; // 음식 종류별 AI 맞춤 연동형 1초 보정 칩 (최대 3~4개)
+}
+
+export interface PortionModifier {
+  scale: number;        // 소(0.8), 보통(1.0), 곱빼기(1.3)
+  excludeSoup: boolean; // 국물 제외 여부 (-15% 칼로리/나트륨)
+  activeLabel?: string; // 현재 선택된 칩 라벨 (예: "초등 급식", "성인 식판", "시럽 뺌")
+}
+
+export type StampTemplate = 'receipt' | 'polaroid';
+export type AspectRatio = '9:16' | '1:1';
