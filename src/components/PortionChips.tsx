@@ -120,7 +120,7 @@ export const PortionChips: React.FC<PortionChipsProps> = ({
           <span className="font-semibold text-neutral-300">인스타 방어 모드:</span>
           <span className="text-rose-400 text-[10px] font-medium">부끄러운 고칼로리 싹 가리기</span>
         </div>
-        <div className="grid grid-cols-4 gap-1.5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
           {humorModes.map(({ mode, label }) => {
             const isSelected = (portion.humorMode ?? 'none') === mode;
             return (
@@ -128,7 +128,7 @@ export const PortionChips: React.FC<PortionChipsProps> = ({
                 key={mode}
                 type="button"
                 onClick={() => onPortionChange({ ...portion, humorMode: mode })}
-                className={`py-1.5 px-1 rounded-xl text-[11px] font-bold border transition-all active:scale-95 text-center truncate ${
+                className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all active:scale-95 text-center flex items-center justify-center whitespace-nowrap ${
                   isSelected
                     ? 'bg-amber-400 text-neutral-950 border-amber-300 shadow-md shadow-amber-400/20'
                     : 'bg-neutral-900/90 text-neutral-400 border-neutral-800 hover:text-neutral-200'

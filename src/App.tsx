@@ -486,55 +486,55 @@ export const App: React.FC = () => {
       />
 
       {/* 상단 네비게이션 헤더 */}
-      <header className="w-full max-w-md px-4 py-3 border-b border-neutral-800/80 sticky top-0 bg-[#111215]/90 backdrop-blur-md z-30 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <header className="w-full max-w-md px-3 py-2.5 border-b border-neutral-800/80 sticky top-0 bg-[#111215]/95 backdrop-blur-md z-30 flex items-center justify-between gap-1">
+        <div className="flex items-center gap-1.5 shrink-0">
           {/* 상황별 뒤로가기 버튼 */}
           {currentView === 'editor' ? (
             <button
               onClick={() => changeView('intro')}
-              className="py-1 px-2.5 rounded-lg bg-neutral-850 hover:bg-neutral-800 text-neutral-300 border border-neutral-700 hover:text-white transition active:scale-95 flex items-center gap-1.5 shadow-sm"
+              className="py-1 px-2 rounded-lg bg-neutral-850 hover:bg-neutral-800 text-neutral-300 border border-neutral-700 hover:text-white transition active:scale-95 flex items-center gap-1 shadow-sm shrink-0"
               title="새 촬영으로 돌아가기"
             >
-              <ArrowLeft className="w-4 h-4 text-neutral-300" />
-              <span className="text-xs font-semibold pr-0.5">새 촬영</span>
+              <ArrowLeft className="w-3.5 h-3.5 text-neutral-300 shrink-0" />
+              <span className="text-[11px] font-semibold whitespace-nowrap">새 촬영</span>
             </button>
           ) : currentView === 'gallery' ? (
             <button
               onClick={() => changeView('editor')}
-              className="py-1 px-2.5 rounded-lg bg-neutral-850 hover:bg-neutral-800 text-neutral-300 border border-neutral-700 hover:text-white transition active:scale-95 flex items-center gap-1.5 shadow-sm"
+              className="py-1 px-2 rounded-lg bg-neutral-850 hover:bg-neutral-800 text-neutral-300 border border-neutral-700 hover:text-white transition active:scale-95 flex items-center gap-1 shadow-sm shrink-0"
               title="에디터로 돌아가기"
             >
-              <ArrowLeft className="w-4 h-4 text-neutral-300" />
-              <span className="text-xs font-semibold pr-0.5">에디터</span>
+              <ArrowLeft className="w-3.5 h-3.5 text-neutral-300 shrink-0" />
+              <span className="text-[11px] font-semibold whitespace-nowrap">에디터</span>
             </button>
           ) : (
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-rose-500 to-amber-400 flex items-center justify-center shadow-md shadow-rose-500/20">
-              <Camera className="w-4 h-4 text-white" />
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-rose-500 to-amber-400 flex items-center justify-center shadow-md shadow-rose-500/20 shrink-0">
+              <Camera className="w-3.5 h-3.5 text-white" />
             </div>
           )}
 
-          <div>
-            <h1 className="text-base font-bold tracking-tight text-white flex items-center gap-1.5">
-              DietSnap <span className="text-[10px] px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400 font-mono">v1.0</span>
+          <div className="shrink-0">
+            <h1 className="text-sm font-bold tracking-tight text-white flex items-center gap-1 whitespace-nowrap">
+              DietSnap <span className="text-[9px] px-1 py-0.2 rounded bg-neutral-800 text-neutral-400 font-mono">v1.0</span>
             </h1>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1 shrink-0">
           {/* 🗂️ 내 식단 갤러리 관리 버튼 (기록 개수 뱃지) */}
           <button
             onClick={() => changeView(currentView === 'gallery' ? 'editor' : 'gallery')}
-            className={`text-xs px-2.5 py-1.5 rounded-xl font-bold flex items-center gap-1.5 transition-all shadow-sm ${
+            className={`text-[11px] px-2 py-1 rounded-xl font-bold flex items-center gap-1 transition-all shadow-sm shrink-0 ${
               currentView === 'gallery'
                 ? 'bg-rose-500 text-white shadow-rose-500/30'
                 : 'bg-neutral-850 text-neutral-300 border border-neutral-700 hover:text-white'
             }`}
             title="내 오식완 기록 갤러리"
           >
-            <BookOpen className="w-3.5 h-3.5" />
-            <span>내 기록</span>
+            <BookOpen className="w-3 h-3 shrink-0" />
+            <span className="whitespace-nowrap">내 기록</span>
             {records.length > 0 && (
-              <span className={`text-[10px] px-1 rounded-full font-mono font-bold ${
+              <span className={`text-[9px] px-1 rounded-full font-mono font-bold ${
                 currentView === 'gallery' ? 'bg-white text-rose-600' : 'bg-rose-500 text-white'
               }`}>
                 {records.length}
@@ -546,22 +546,22 @@ export const App: React.FC = () => {
           <button
             onClick={handleToggleFullscreen}
             title="전체화면 전환"
-            className="p-1.5 rounded-lg bg-neutral-800/90 text-neutral-300 border border-neutral-700 hover:text-white transition active:scale-95"
+            className="p-1 rounded-lg bg-neutral-800/90 text-neutral-300 border border-neutral-700 hover:text-white transition active:scale-95 shrink-0"
           >
-            <Maximize2 className="w-4 h-4" />
+            <Maximize2 className="w-3.5 h-3.5" />
           </button>
 
           {/* 👑 월 990원 / 연 5,500원 Pro 모달 오픈 버튼 */}
           <button
             onClick={() => setIsProModalOpen(true)}
-            className={`text-xs px-2.5 py-1.5 rounded-full font-bold flex items-center gap-1 transition-all ${
+            className={`text-[11px] px-2 py-1 rounded-full font-bold flex items-center gap-1 transition-all shrink-0 ${
               isPro
                 ? 'bg-amber-400 text-neutral-950 shadow-md shadow-amber-400/20'
                 : 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-300 border border-amber-500/40 hover:border-amber-400'
             }`}
           >
-            <Crown className={`w-3.5 h-3.5 ${isPro ? 'text-neutral-950' : 'text-amber-400'}`} />
-            {isPro ? `PRO (${remainingCount}/15)` : '월 990원 PRO'}
+            <Crown className={`w-3 h-3 shrink-0 ${isPro ? 'text-neutral-950' : 'text-amber-400'}`} />
+            <span className="whitespace-nowrap">{isPro ? `PRO (${remainingCount})` : '월 990원'}</span>
           </button>
         </div>
       </header>
@@ -594,15 +594,15 @@ export const App: React.FC = () => {
         />
       ) : (
         /* 3. 에디터 화면 (스탬프 캔버스 & 1초 보정 칩 & 공유/저장) */
-        <main className="w-full max-w-md px-4 pt-4 flex flex-col items-center gap-4">
+        <main className="w-full max-w-md px-3 pt-2 pb-10 flex flex-col items-center gap-3">
           {/* 빠른 테스트용 프리셋 칩 */}
-          <div className="w-full flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-            <span className="text-[11px] text-neutral-400 font-semibold shrink-0">추천 식단:</span>
+          <div className="w-full flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
+            <span className="text-[10px] text-neutral-400 font-semibold shrink-0">추천 식단:</span>
             {SAMPLE_PRESETS.map((preset) => (
               <button
                 key={preset.name}
                 onClick={() => handleSelectPreset(preset)}
-                className="text-xs px-2.5 py-1 rounded-xl bg-neutral-900 border border-neutral-800 hover:border-neutral-600 text-neutral-300 shrink-0 transition active:scale-95 font-medium"
+                className="text-[11px] px-2 py-0.5 rounded-lg bg-neutral-900 border border-neutral-800 hover:border-neutral-600 text-neutral-300 shrink-0 transition active:scale-95 whitespace-nowrap"
               >
                 {preset.name}
               </button>
@@ -611,9 +611,9 @@ export const App: React.FC = () => {
 
           {/* 알림 토스트 */}
           {statusMessage && !isAnalyzing && (
-            <div className="w-full bg-emerald-950/60 border border-emerald-500/50 rounded-2xl px-3.5 py-2.5 text-xs text-emerald-300 font-bold flex items-center justify-center gap-2 shadow-lg">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              {statusMessage}
+            <div className="w-full bg-emerald-950/60 border border-emerald-500/50 rounded-xl px-3 py-2 text-xs text-emerald-300 font-bold flex items-center justify-center gap-1.5 shadow-lg">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <span className="truncate">{statusMessage}</span>
             </div>
           )}
 
@@ -623,11 +623,11 @@ export const App: React.FC = () => {
               <div className="absolute inset-0 z-20 bg-neutral-950/80 backdrop-blur-md rounded-3xl flex flex-col items-center justify-center gap-3">
                 <RefreshCw className="w-9 h-9 text-rose-400 animate-spin" />
                 <div className="text-center px-4">
-                  <p className="text-sm font-extrabold text-white">
-                    {statusMessage || 'AI 분석 중...'}
+                  <p className="text-sm font-bold text-white tracking-tight animate-pulse">
+                    {statusMessage || 'AI 식단 정밀 분석 중...'}
                   </p>
-                  <p className="text-xs text-rose-300/80 pt-1 font-medium">
-                    1.2초 만에 성수동 감성 영수증 발행 중 ✨
+                  <p className="text-xs text-neutral-400 pt-1">
+                    양념, 토핑, 중량을 실시간 추정하고 있습니다
                   </p>
                 </div>
               </div>
@@ -676,47 +676,48 @@ export const App: React.FC = () => {
           )}
 
           {/* 하단 핵심 액션 버튼 바 */}
-          <div className="w-full space-y-2 pt-2">
+          <div className="w-full space-y-2 pt-1">
             <div className="grid grid-cols-2 gap-2">
               {/* 1. 즉시 카메라 촬영 버튼 */}
               <button
                 onClick={handleTriggerCapture}
-                className="py-3 px-3 bg-neutral-100 hover:bg-white text-neutral-950 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-md transition active:scale-[0.98]"
+                className="py-2.5 px-3 bg-neutral-100 hover:bg-white text-neutral-950 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition active:scale-[0.98] whitespace-nowrap"
               >
-                <Camera className="w-4 h-4 text-neutral-950" />
-                다시 촬영
+                <Camera className="w-3.5 h-3.5 text-neutral-950 shrink-0" />
+                <span>다시 촬영</span>
               </button>
 
               {/* 2. 갤러리 앨범 선택 버튼 */}
               <button
                 onClick={handleTriggerGallery}
-                className="py-3 px-3 bg-neutral-850 hover:bg-neutral-800 text-neutral-200 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 border border-neutral-750 shadow-md transition active:scale-[0.98]"
+                className="py-2.5 px-3 bg-neutral-850 hover:bg-neutral-800 text-neutral-200 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 border border-neutral-750 shadow-sm transition active:scale-[0.98] whitespace-nowrap"
               >
-                <Upload className="w-4 h-4 text-neutral-400" />
-                앨범에서 선택
+                <Upload className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                <span>앨범에서 선택</span>
               </button>
             </div>
 
             {/* 3. 인스타그램 스토리 공유 버튼 */}
             <button
               onClick={handleShare}
-              className="w-full py-3.5 px-4 bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500 hover:opacity-95 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-pink-500/25 transition active:scale-[0.98]"
+              className="w-full py-3 px-4 bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500 hover:opacity-95 text-white rounded-xl font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-md shadow-pink-500/20 transition active:scale-[0.98] whitespace-nowrap"
             >
-              <Share2 className="w-4 h-4" />
-              인스타 스토리 즉시 공유
+              <Share2 className="w-4 h-4 shrink-0" />
+              <span>인스타 스토리 즉시 공유</span>
             </button>
           </div>
 
           {/* JPG 파일 직접 다운로드 링크 */}
           <button
             onClick={handleDownload}
-            className="text-xs text-neutral-400 hover:text-neutral-200 flex items-center gap-1 pt-1 underline underline-offset-4"
+            className="text-[11px] text-neutral-400 hover:text-neutral-200 flex items-center gap-1 pt-0.5 underline underline-offset-4"
           >
-            <Download className="w-3.5 h-3.5" /> 고해상도 JPG 파일로 직접 저장하기
+            <Download className="w-3 h-3 shrink-0" />
+            <span>고해상도 JPG 파일로 직접 저장하기</span>
           </button>
 
           {/* 안내 및 면책 조항 */}
-          <p className="text-[11px] text-neutral-500 text-center leading-relaxed pt-3 px-2">
+          <p className="text-[10px] text-neutral-500 text-center leading-relaxed pt-2 px-2">
             * 분석된 영양 정보는 식약처 기준 AI 추정치이며 실제 조리법에 따라 오차가 있을 수 있습니다.
           </p>
         </main>

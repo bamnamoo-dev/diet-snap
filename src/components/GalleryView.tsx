@@ -747,45 +747,45 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
         {todayRecords.length > 0 && (
           <button
             onClick={handleGenerateDailySummary}
-            className="mt-3.5 w-full py-2.5 px-4 rounded-2xl bg-gradient-to-r from-rose-500 via-pink-500 to-amber-400 hover:opacity-95 text-white text-xs font-extrabold flex items-center justify-center gap-2 shadow-lg shadow-rose-500/20 active:scale-[0.98] transition"
+            className="mt-3 w-full py-2.5 px-3 rounded-2xl bg-gradient-to-r from-rose-500 via-pink-500 to-amber-400 hover:opacity-95 text-white text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-md shadow-rose-500/20 active:scale-[0.98] transition"
           >
-            <Layers className="w-4 h-4 text-white" />
-            <span>오늘의 {todayRecords.length}끼 모아보기 일일 영수증 발행</span>
+            <Layers className="w-3.5 h-3.5 text-white shrink-0" />
+            <span className="whitespace-nowrap">오늘의 {todayRecords.length}끼 모아보기 영수증 발행</span>
           </button>
         )}
 
         {/* 🌟 2대 킬러 보고서: PT 쌤 제출용 식단표 & 주간 오식완 롱 영수증 */}
-        <div className="grid grid-cols-2 gap-2 mt-2">
+        <div className="grid grid-cols-2 gap-1.5 mt-2">
           <button
             onClick={handleOpenTrainerReport}
-            className={`py-2.5 px-3 rounded-2xl border text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 ${
+            className={`py-2 px-2 rounded-xl border text-[11px] font-bold flex items-center justify-center gap-1 transition active:scale-95 whitespace-nowrap ${
               isPro 
                 ? 'bg-sky-500/15 border-sky-500/30 text-sky-300 hover:bg-sky-500/25' 
                 : 'bg-neutral-900/90 border-neutral-800 text-neutral-300 hover:border-neutral-700'
             }`}
           >
-            <ClipboardCheck className="w-4 h-4 text-sky-400 shrink-0" />
-            <span>쌤 제출용 식단표</span>
+            <ClipboardCheck className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+            <span className="whitespace-nowrap">쌤 제출용 식단표</span>
             {!isPro && (
-              <span className="px-1.5 py-0.5 bg-amber-500/20 text-amber-300 text-[9px] font-black rounded-md flex items-center gap-0.5 border border-amber-500/30 shrink-0">
-                <Lock className="w-2.5 h-2.5" /> PRO
+              <span className="px-1 py-0.2 bg-amber-500/20 text-amber-300 text-[8px] font-black rounded-md flex items-center gap-0.5 border border-amber-500/30 shrink-0">
+                <Lock className="w-2 h-2" /> PRO
               </span>
             )}
           </button>
 
           <button
             onClick={handleOpenWeeklyWrap}
-            className={`py-2.5 px-3 rounded-2xl border text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 ${
+            className={`py-2 px-2 rounded-xl border text-[11px] font-bold flex items-center justify-center gap-1 transition active:scale-95 whitespace-nowrap ${
               isPro 
                 ? 'bg-purple-500/15 border-purple-500/30 text-purple-300 hover:bg-purple-500/25' 
                 : 'bg-neutral-900/90 border-neutral-800 text-neutral-300 hover:border-neutral-700'
             }`}
           >
-            <CalendarCheck className="w-4 h-4 text-purple-400 shrink-0" />
-            <span>주간 오식완 결산</span>
+            <CalendarCheck className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+            <span className="whitespace-nowrap">주간 결산 영수증</span>
             {!isPro && (
-              <span className="px-1.5 py-0.5 bg-amber-500/20 text-amber-300 text-[9px] font-black rounded-md flex items-center gap-0.5 border border-amber-500/30 shrink-0">
-                <Lock className="w-2.5 h-2.5" /> PRO
+              <span className="px-1 py-0.2 bg-amber-500/20 text-amber-300 text-[8px] font-black rounded-md flex items-center gap-0.5 border border-amber-500/30 shrink-0">
+                <Lock className="w-2 h-2" /> PRO
               </span>
             )}
           </button>
