@@ -13,8 +13,10 @@ import {
   Crown, 
   CheckCircle2, 
   RefreshCw,
-  Maximize2 
+  Maximize2,
+  ArrowLeft 
 } from 'lucide-react';
+import { IntroView, PresetItem } from './components/IntroView';
 
 // 초기 데모용 프리셋 식단 데이터
 const SAMPLE_PRESETS: { name: string; img: string; data: NutritionItem }[] = [
@@ -131,11 +133,22 @@ export const App: React.FC = () => {
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [compressStats, setCompressStats] = useState<CompressionResult | null>(null);
 
+  // 화면 모드: 'intro' (첫 인트로 뷰파인더 화면) | 'editor' (스탬프 편집/저장 화면)
+  const [currentView, setCurrentView] = useState<'intro' | 'editor'>('intro');
+  const [hasSavedWork, setHasSavedWork] = useState<boolean>(() => {
+    try {
+      return Boolean(localStorage.getItem('dietsnap_current_img'));
+    } catch {
+      return false;
+    }
+  });
+
   // 데이터 변경 시 로컬에 자동 영구 보관 (새로고침 방어)
   useEffect(() => {
     try {
       if (imageSrc && !imageSrc.startsWith('blob:')) {
         localStorage.setItem('dietsnap_current_img', imageSrc);
+        setHasSavedWork(true);
       }
       localStorage.setItem('dietsnap_current_data', JSON.stringify(nutrition));
       localStorage.setItem('dietsnap_current_portion', JSON.stringify(portion));
@@ -153,6 +166,23 @@ export const App: React.FC = () => {
 
   const isCameraRef = useRef<boolean>(false);
 
+  // 카메라 촬영 및 갤러리 파일 선택 트리거 헬퍼
+  const handleTriggerCapture = () => {
+    isCameraRef.current = true;
+    if (cameraInputRef.current) {
+      cameraInputRef.current.value = '';
+      cameraInputRef.current.click();
+    }
+  };
+
+  const handleTriggerGallery = () => {
+    isCameraRef.current = false;
+    if (galleryInputRef.current) {
+      galleryInputRef.current.value = '';
+      galleryInputRef.current.click();
+    }
+  };
+
   // 1. 사진 업로드 및 1024px 클라이언트 압축 후 실제 Gemini AI 분석 호출
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -161,6 +191,7 @@ export const App: React.FC = () => {
     try {
       setErrorMessage(null);
       setIsAnalyzing(true);
+      setCurrentView('editor'); // 촬영/선택 즉시 에디터 화면으로 전환하여 분석 표시
 
       // ✨ 1. 내 폰 화면 및 저장 캔버스용: 원본 고화질(Original) 그대로 적용 (자동 다운로드 팝업 방지)
       const originalObjectUrl = URL.createObjectURL(file);
@@ -212,6 +243,7 @@ export const App: React.FC = () => {
     setNutrition(preset.data);
     setPortion({ scale: 1.0, excludeSoup: false });
     setCompressStats(null);
+    setCurrentView('editor'); // 프리셋 선택 시 바로 편집기 화면으로 전환
   };
 
   // 3. 고화질 JPG 다운로드
@@ -264,12 +296,44 @@ export const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#0d0e12] text-neutral-100 flex flex-col items-center justify-start pb-24 font-sans">
+      {/* 1) 카메라 즉시 촬영 전용 숨김 인풋 (capture="environment") */}
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={handleFileChange}
+        className="hidden"
+      />
+
+      {/* 2) 갤러리/앨범 선택 전용 숨김 인풋 (capture 없음) */}
+      <input
+        ref={galleryInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileChange}
+        className="hidden"
+      />
+
       {/* 상단 네비게이션 헤더 */}
       <header className="w-full max-w-md px-4 py-3 border-b border-neutral-800/80 sticky top-0 bg-[#0d0e12]/90 backdrop-blur-md z-30 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-rose-500 to-amber-400 flex items-center justify-center shadow-md shadow-rose-500/20">
-            <Camera className="w-4 h-4 text-white" />
-          </div>
+          {/* 에디터 모드일 때: 인트로(새 촬영)로 돌아가기 버튼 */}
+          {currentView === 'editor' ? (
+            <button
+              onClick={() => setCurrentView('intro')}
+              className="py-1 px-2.5 rounded-lg bg-neutral-850 hover:bg-neutral-800 text-neutral-300 border border-neutral-700 hover:text-white transition active:scale-95 flex items-center gap-1.5 shadow-sm"
+              title="새 촬영으로 돌아가기"
+            >
+              <ArrowLeft className="w-4 h-4 text-neutral-300" />
+              <span className="text-xs font-semibold pr-0.5">새 촬영</span>
+            </button>
+          ) : (
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-rose-500 to-amber-400 flex items-center justify-center shadow-md shadow-rose-500/20">
+              <Camera className="w-4 h-4 text-white" />
+            </div>
+          )}
+
           <div>
             <h1 className="text-base font-bold tracking-tight text-white flex items-center gap-1.5">
               DietSnap <span className="text-[10px] px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400 font-mono">v1.0</span>
@@ -302,176 +366,157 @@ export const App: React.FC = () => {
         </div>
       </header>
 
-      {/* 메인 컨테이너 (모바일 퍼스트 max-w-md) */}
-      <main className="w-full max-w-md px-4 pt-4 flex flex-col items-center gap-4">
-        
-        {/* 압축 통계 뱃지 */}
-        {compressStats && (
-          <div className="w-full bg-emerald-950/40 border border-emerald-800/50 rounded-xl px-3 py-2 flex items-center justify-between text-xs text-emerald-300">
-            <span className="flex items-center gap-1.5 font-medium">
-              <Zap className="w-3.5 h-3.5 text-emerald-400" /> 초고속 이미지 최적화 완료
-            </span>
-            <span className="font-mono text-neutral-300">
-              {compressStats.originalSizeKB}KB ➔ <b className="text-emerald-400">{compressStats.compressedSizeKB}KB</b> (-{Math.round((1 - compressStats.compressedSizeKB / compressStats.originalSizeKB) * 100)}%)
-            </span>
-          </div>
-        )}
-
-        {/* 빠른 테스트용 프리셋 칩 */}
-        <div className="w-full flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-          <span className="text-[11px] text-neutral-500 font-medium shrink-0">원터치 예시:</span>
-          {SAMPLE_PRESETS.map((preset) => (
-            <button
-              key={preset.name}
-              onClick={() => handleSelectPreset(preset)}
-              className="text-xs px-2.5 py-1 rounded-lg bg-neutral-900 border border-neutral-800 hover:border-neutral-600 text-neutral-300 shrink-0 transition active:scale-95"
-            >
-              {preset.name}
-            </button>
-          ))}
-        </div>
-
-        {/* 알림 토스트 */}
-        {statusMessage && !isAnalyzing && (
-          <div className="w-full bg-emerald-950/60 border border-emerald-500/50 rounded-xl px-3 py-2.5 text-xs text-emerald-300 font-semibold flex items-center justify-center gap-2 shadow-lg">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-            {statusMessage}
-          </div>
-        )}
-
-        {/* 캔버스 스탬프 뷰어 영역 */}
-        <div className="relative w-full">
-          {isAnalyzing && (
-            <div className="absolute inset-0 z-20 bg-neutral-950/75 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center gap-3">
-              <RefreshCw className="w-8 h-8 text-rose-400 animate-spin" />
-              <div className="text-center px-4">
-                <p className="text-sm font-bold text-white">
-                  {statusMessage || 'AI 분석 중...'}
-                </p>
-                <p className="text-xs text-neutral-400 pt-1">
-                  1.5초 만에 칼로리 & 탄단지 명세서 발행 중
-                </p>
-              </div>
+      {/* 화면 모드별 뷰 렌더링 */}
+      {currentView === 'intro' ? (
+        /* 1. 첫 인트로 화면 (뷰파인더 & 즉시 촬영 & 1초 체험) */
+        <IntroView
+          onCaptureClick={handleTriggerCapture}
+          onGalleryClick={handleTriggerGallery}
+          onSelectPreset={handleSelectPreset}
+          presets={SAMPLE_PRESETS}
+          hasSavedWork={hasSavedWork}
+          onResumeWork={() => setCurrentView('editor')}
+        />
+      ) : (
+        /* 2. 에디터 화면 (스탬프 캔버스 & 1초 보정 칩 & 공유/저장) */
+        <main className="w-full max-w-md px-4 pt-4 flex flex-col items-center gap-4">
+          {/* 압축 통계 뱃지 */}
+          {compressStats && (
+            <div className="w-full bg-emerald-950/40 border border-emerald-800/50 rounded-xl px-3 py-2 flex items-center justify-between text-xs text-emerald-300">
+              <span className="flex items-center gap-1.5 font-medium">
+                <Zap className="w-3.5 h-3.5 text-emerald-400" /> 초고속 이미지 최적화 완료
+              </span>
+              <span className="font-mono text-neutral-300">
+                {compressStats.originalSizeKB}KB ➔ <b className="text-emerald-400">{compressStats.compressedSizeKB}KB</b> (-{Math.round((1 - compressStats.compressedSizeKB / compressStats.originalSizeKB) * 100)}%)
+              </span>
             </div>
           )}
 
-          <StampCanvas
-            imageSrc={imageSrc}
-            nutrition={nutrition}
-            portion={portion}
-            template={template}
-            aspectRatio={aspectRatio}
-            isPro={isPro}
-            onCanvasReady={(canvas) => {
-              canvasElementRef.current = canvas;
-            }}
-          />
-        </div>
+          {/* 빠른 테스트용 프리셋 칩 */}
+          <div className="w-full flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+            <span className="text-[11px] text-neutral-500 font-medium shrink-0">다른 예시:</span>
+            {SAMPLE_PRESETS.map((preset) => (
+              <button
+                key={preset.name}
+                onClick={() => handleSelectPreset(preset)}
+                className="text-xs px-2.5 py-1 rounded-lg bg-neutral-900 border border-neutral-800 hover:border-neutral-600 text-neutral-300 shrink-0 transition active:scale-95"
+              >
+                {preset.name}
+              </button>
+            ))}
+          </div>
 
-        {/* 1초 보정 칩 & 수치 직접 수정 인터랙션 */}
-        <PortionChips
-          portion={portion}
-          onPortionChange={setPortion}
-          nutrition={nutrition}
-          onNutritionChange={(updated) => setNutrition(updated)}
-          template={template}
-          onTemplateChange={setTemplate}
-          aspectRatio={aspectRatio}
-          onAspectRatioChange={setAspectRatio}
-        />
-
-        {/* 에러 발생 시 안내 배너 */}
-        {errorMessage && (
-          <div className="w-full bg-rose-950/60 border border-rose-800 rounded-xl p-3 text-xs text-rose-300 flex items-start justify-between">
-            <div>
-              <p className="font-bold">⚠️ 분석 오류 발생</p>
-              <p className="pt-0.5 opacity-90">{errorMessage}</p>
+          {/* 알림 토스트 */}
+          {statusMessage && !isAnalyzing && (
+            <div className="w-full bg-emerald-950/60 border border-emerald-500/50 rounded-xl px-3 py-2.5 text-xs text-emerald-300 font-semibold flex items-center justify-center gap-2 shadow-lg">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              {statusMessage}
             </div>
-            <button
-              onClick={() => setErrorMessage(null)}
-              className="text-rose-400 hover:text-white px-1.5 py-0.5 font-bold"
-            >
-              ✕
-            </button>
-          </div>
-        )}
+          )}
 
-        {/* 1) 카메라 즉시 촬영 전용 인풋 (capture="environment") */}
-        <input
-          ref={cameraInputRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          onChange={handleFileChange}
-          className="hidden"
-        />
+          {/* 캔버스 스탬프 뷰어 영역 */}
+          <div className="relative w-full">
+            {isAnalyzing && (
+              <div className="absolute inset-0 z-20 bg-neutral-950/75 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center gap-3">
+                <RefreshCw className="w-8 h-8 text-rose-400 animate-spin" />
+                <div className="text-center px-4">
+                  <p className="text-sm font-bold text-white">
+                    {statusMessage || 'AI 분석 중...'}
+                  </p>
+                  <p className="text-xs text-neutral-400 pt-1">
+                    1.5초 만에 칼로리 & 탄단지 명세서 발행 중
+                  </p>
+                </div>
+              </div>
+            )}
 
-        {/* 2) 갤러리/앨범 선택 전용 인풋 (capture 없음) */}
-        <input
-          ref={galleryInputRef}
-          type="file"
-          accept="image/*"
-          onChange={handleFileChange}
-          className="hidden"
-        />
-
-        {/* 하단 핵심 액션 버튼 바 */}
-        <div className="w-full space-y-2 pt-2">
-          <div className="grid grid-cols-2 gap-2">
-            {/* 1. 즉시 카메라 촬영 버튼 */}
-            <button
-              onClick={() => {
-                isCameraRef.current = true;
-                if (cameraInputRef.current) {
-                  cameraInputRef.current.value = '';
-                  cameraInputRef.current.click();
-                }
+            <StampCanvas
+              imageSrc={imageSrc}
+              nutrition={nutrition}
+              portion={portion}
+              template={template}
+              aspectRatio={aspectRatio}
+              isPro={isPro}
+              onCanvasReady={(canvas) => {
+                canvasElementRef.current = canvas;
               }}
-              className="py-3 px-3 bg-neutral-100 hover:bg-white text-neutral-950 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-md transition active:scale-[0.98]"
-            >
-              <Camera className="w-4 h-4 text-neutral-950" />
-              즉시 카메라 촬영
-            </button>
-
-            {/* 2. 갤러리 앨범 선택 버튼 */}
-            <button
-              onClick={() => {
-                isCameraRef.current = false;
-                if (galleryInputRef.current) {
-                  galleryInputRef.current.value = '';
-                  galleryInputRef.current.click();
-                }
-              }}
-              className="py-3 px-3 bg-neutral-850 hover:bg-neutral-800 text-neutral-200 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 border border-neutral-750 shadow-md transition active:scale-[0.98]"
-            >
-              <Upload className="w-4 h-4 text-neutral-400" />
-              앨범에서 선택
-            </button>
+            />
           </div>
 
-          {/* 3. 인스타그램 스토리 공유 버튼 */}
+          {/* 1초 보정 칩 & 수치 직접 수정 인터랙션 */}
+          <PortionChips
+            portion={portion}
+            onPortionChange={setPortion}
+            nutrition={nutrition}
+            onNutritionChange={(updated) => setNutrition(updated)}
+            template={template}
+            onTemplateChange={setTemplate}
+            aspectRatio={aspectRatio}
+            onAspectRatioChange={setAspectRatio}
+          />
+
+          {/* 에러 발생 시 안내 배너 */}
+          {errorMessage && (
+            <div className="w-full bg-rose-950/60 border border-rose-800 rounded-xl p-3 text-xs text-rose-300 flex items-start justify-between">
+              <div>
+                <p className="font-bold">⚠️ 분석 오류 발생</p>
+                <p className="pt-0.5 opacity-90">{errorMessage}</p>
+              </div>
+              <button
+                onClick={() => setErrorMessage(null)}
+                className="text-rose-400 hover:text-white px-1.5 py-0.5 font-bold"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
+          {/* 하단 핵심 액션 버튼 바 */}
+          <div className="w-full space-y-2 pt-2">
+            <div className="grid grid-cols-2 gap-2">
+              {/* 1. 즉시 카메라 촬영 버튼 */}
+              <button
+                onClick={handleTriggerCapture}
+                className="py-3 px-3 bg-neutral-100 hover:bg-white text-neutral-950 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-md transition active:scale-[0.98]"
+              >
+                <Camera className="w-4 h-4 text-neutral-950" />
+                다시 촬영
+              </button>
+
+              {/* 2. 갤러리 앨범 선택 버튼 */}
+              <button
+                onClick={handleTriggerGallery}
+                className="py-3 px-3 bg-neutral-850 hover:bg-neutral-800 text-neutral-200 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 border border-neutral-750 shadow-md transition active:scale-[0.98]"
+              >
+                <Upload className="w-4 h-4 text-neutral-400" />
+                앨범에서 선택
+              </button>
+            </div>
+
+            {/* 3. 인스타그램 스토리 공유 버튼 */}
+            <button
+              onClick={handleShare}
+              className="w-full py-3.5 px-4 bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500 hover:opacity-95 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-pink-500/25 transition active:scale-[0.98]"
+            >
+              <Share2 className="w-4 h-4" />
+              인스타 스토리 즉시 공유
+            </button>
+          </div>
+
+          {/* JPG 파일 직접 다운로드 링크 */}
           <button
-            onClick={handleShare}
-            className="w-full py-3.5 px-4 bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500 hover:opacity-95 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-pink-500/25 transition active:scale-[0.98]"
+            onClick={handleDownload}
+            className="text-xs text-neutral-400 hover:text-neutral-200 flex items-center gap-1 pt-1 underline underline-offset-4"
           >
-            <Share2 className="w-4 h-4" />
-            인스타 스토리 즉시 공유
+            <Download className="w-3.5 h-3.5" /> 고해상도 JPG 파일로 직접 저장하기
           </button>
-        </div>
 
-        {/* JPG 파일 직접 다운로드 링크 */}
-        <button
-          onClick={handleDownload}
-          className="text-xs text-neutral-400 hover:text-neutral-200 flex items-center gap-1 pt-1 underline underline-offset-4"
-        >
-          <Download className="w-3.5 h-3.5" /> 고해상도 JPG 파일로 직접 저장하기
-        </button>
-
-        {/* 안내 및 면책 조항 */}
-        <p className="text-[11px] text-neutral-500 text-center leading-relaxed pt-3 px-2">
-          * 분석된 영양 정보는 식약처 기준 AI 추정치이며 실제 조리법에 따라 오차가 있을 수 있습니다.
-        </p>
-      </main>
+          {/* 안내 및 면책 조항 */}
+          <p className="text-[11px] text-neutral-500 text-center leading-relaxed pt-3 px-2">
+            * 분석된 영양 정보는 식약처 기준 AI 추정치이며 실제 조리법에 따라 오차가 있을 수 있습니다.
+          </p>
+        </main>
+      )}
     </div>
   );
 };
