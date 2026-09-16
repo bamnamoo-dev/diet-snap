@@ -36,36 +36,20 @@ export const IntroView: React.FC<IntroViewProps> = ({
   onOpenProModal,
 }) => {
   return (
-    <div className="w-full max-w-md px-4 pt-2 pb-12 flex flex-col items-center gap-5 font-sans">
+    <div className="w-full max-w-md px-3 pt-2 pb-12 flex flex-col items-center gap-4 font-sans">
       
-      {/* 1. 이전 작업 이어보기 칩 (이전 세션이 있는 경우) */}
-      {hasSavedWork && (
-        <button
-          onClick={onResumeWork}
-          className="w-full py-2 px-3.5 bg-neutral-900/90 border border-neutral-700/80 hover:border-amber-400/60 rounded-xl flex items-center justify-between text-xs text-neutral-300 transition active:scale-[0.99] shadow-sm group"
-        >
-          <span className="flex items-center gap-2">
-            <RotateCcw className="w-3.5 h-3.5 text-amber-400 group-hover:rotate-[-45deg] transition-transform" />
-            <span>최근 작업 중이던 식단이 있어요</span>
-          </span>
-          <span className="text-amber-400 font-semibold flex items-center text-[11px] gap-0.5">
-            이어서 편집 <ArrowRight className="w-3 h-3" />
-          </span>
-        </button>
-      )}
-
-      {/* 2. 감성 카메라 뷰파인더 히어로 카드 */}
-      <div className="relative w-full aspect-[4/3] rounded-3xl bg-gradient-to-b from-neutral-900/90 via-neutral-900/60 to-neutral-950 border border-neutral-800/80 p-5 flex flex-col items-center justify-between overflow-hidden shadow-2xl backdrop-blur-md">
+      {/* 📸 카메라 뷰파인더 포커싱 히어로 카드 (앱의 핵심 첫인상) */}
+      <div className="relative w-full aspect-[4/3] rounded-3xl bg-gradient-to-b from-neutral-900/95 via-neutral-900/70 to-neutral-950 border border-neutral-800/90 p-5 flex flex-col items-center justify-between overflow-hidden shadow-2xl backdrop-blur-md">
         
         {/* 은은한 배경 빛 번짐 효과 (Glow Accent) */}
-        <div className="absolute -top-12 -left-12 w-36 h-36 bg-rose-500/15 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-12 -right-12 w-36 h-36 bg-amber-400/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -top-12 -left-12 w-36 h-36 bg-rose-500/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-12 -right-12 w-36 h-36 bg-amber-400/20 rounded-full blur-3xl pointer-events-none" />
 
-        {/* 뷰파인더 코너 레티클 (4개 모서리 가이드라인) */}
-        <div className="absolute top-3 left-3 w-5 h-5 border-t-2 border-l-2 border-rose-400/70 rounded-tl-sm pointer-events-none" />
-        <div className="absolute top-3 right-3 w-5 h-5 border-t-2 border-r-2 border-rose-400/70 rounded-tr-sm pointer-events-none" />
-        <div className="absolute bottom-3 left-3 w-5 h-5 border-b-2 border-l-2 border-rose-400/70 rounded-bl-sm pointer-events-none" />
-        <div className="absolute bottom-3 right-3 w-5 h-5 border-b-2 border-r-2 border-rose-400/70 rounded-br-sm pointer-events-none" />
+        {/* 뷰파인더 코너 포커싱 레티클 (4개 모서리 카메라 가이드라인) */}
+        <div className="absolute top-3.5 left-3.5 w-6 h-6 border-t-2 border-l-2 border-rose-400/80 rounded-tl-sm pointer-events-none" />
+        <div className="absolute top-3.5 right-3.5 w-6 h-6 border-t-2 border-r-2 border-rose-400/80 rounded-tr-sm pointer-events-none" />
+        <div className="absolute bottom-3.5 left-3.5 w-6 h-6 border-b-2 border-l-2 border-rose-400/80 rounded-bl-sm pointer-events-none" />
+        <div className="absolute bottom-3.5 right-3.5 w-6 h-6 border-b-2 border-r-2 border-rose-400/80 rounded-br-sm pointer-events-none" />
 
         {/* 뷰파인더 상단 인디케이터 & 잔여 촬영 횟수 */}
         <div className="w-full flex items-center justify-between text-[11px] font-mono z-10 px-1">

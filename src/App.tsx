@@ -117,17 +117,16 @@ const SAMPLE_PRESETS: { name: string; img: string; data: NutritionItem }[] = [
 ];
 
 export const App: React.FC = () => {
-  // 화면 모드: 'intro' (뷰파인더 첫화면) | 'editor' (스탬프 편집/확인) | 'gallery' (식단 기록 관리)
-  // ✨ 모바일 카메라 촬영 후 브라우저 새로고침(Reload) 시에도 첫화면으로 튕기지 않도록 상태 복원
-  const [currentView, setCurrentView] = useState<'intro' | 'editor' | 'gallery'>(() => {
+  // 화면 모드: 'intro' (뷰파인더 첫 촬영화면) | 'editor' (스탬프 편집/확인) | 'gallery' (식단 기록 관리)
+  // 📸 앱 첫 접속/새로고침 시 항상 "오늘 뭐 드셨나요? 뷰파인더 촬영화면"으로 시작
+  const [currentView, setCurrentView] = useState<'intro' | 'editor' | 'gallery'>('intro');
+
+  useEffect(() => {
     try {
-      const saved = sessionStorage.getItem('dietsnap_active_view') || localStorage.getItem('dietsnap_active_view');
-      if (saved === 'editor' || saved === 'gallery') return saved;
-      return 'intro';
-    } catch {
-      return 'intro';
-    }
-  });
+      localStorage.removeItem('dietsnap_active_view');
+      sessionStorage.removeItem('dietsnap_active_view');
+    } catch {}
+  }, []);
 
   // 상태 관리 (LocalStorage에서 이전 식단 자동 복원)
   const [imageSrc, setImageSrc] = useState<string | null>(() => {
@@ -192,15 +191,9 @@ export const App: React.FC = () => {
     }
   });
 
-  // 뷰 상태 변경 시 세션/로컬 동시 저장 (새로고침 방어)
+  // 뷰 상태 변경 헬퍼
   const changeView = (newView: 'intro' | 'editor' | 'gallery') => {
     setCurrentView(newView);
-    try {
-      sessionStorage.setItem('dietsnap_active_view', newView);
-      localStorage.setItem('dietsnap_active_view', newView);
-    } catch (e) {
-      console.warn('Session save failed', e);
-    }
   };
 
   // 데이터 변경 시 로컬에 자동 영구 보관 (새로고침 방어)
