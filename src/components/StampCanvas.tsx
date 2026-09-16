@@ -8,6 +8,8 @@ interface StampCanvasProps {
   template: StampTemplate;
   aspectRatio: AspectRatio;
   isPro?: boolean;
+  offsetY?: number;
+  onOffsetChange?: (offsetY: number) => void;
   onCanvasReady?: (canvas: HTMLCanvasElement) => void;
 }
 
@@ -18,9 +20,14 @@ export const StampCanvas: React.FC<StampCanvasProps> = ({
   template,
   aspectRatio,
   isPro = false,
+  offsetY = 0,
+  onOffsetChange,
   onCanvasReady,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const isDraggingRef = useRef(false);
+  const dragStartYRef = useRef(0);
+  const initialOffsetRef = useRef(offsetY);
 
   // 보정된 수치 계산
   const soupMultiplier = portion.excludeSoup ? 0.85 : 1.0;
@@ -108,18 +115,41 @@ export const StampCanvas: React.FC<StampCanvasProps> = ({
         let renderW = drawW;
         let renderH = drawH;
 
-        if (isLandscape) {
-          const scale = drawW / imgW;
-          renderW = drawW;
-          renderH = imgH * scale;
-          renderX = drawX;
-          renderY = drawY + (drawH - renderH) / 2;
+        if (template === 'polaroid') {
+          // 폴라로이드 프레임 내 안착
+          if (isLandscape) {
+            const scale = drawW / imgW;
+            renderW = drawW;
+            renderH = imgH * scale;
+            renderX = drawX;
+            renderY = drawY + (drawH - renderH) / 2 + offsetY;
+          } else {
+            const scale = Math.min(drawW / imgW, drawH / imgH);
+            renderW = imgW * scale;
+            renderH = imgH * scale;
+            renderX = drawX + (drawW - renderW) / 2;
+            renderY = drawY + (drawH - renderH) / 2 + offsetY;
+          }
         } else {
-          const scale = Math.min(drawW / imgW, drawH / imgH);
-          renderW = imgW * scale;
-          renderH = imgH * scale;
-          renderX = drawX + (drawW - renderW) / 2;
-          renderY = drawY + (drawH - renderH) / 2;
+          // 영수증/티켓 템플릿: 하단 영수증을 피하여 상단 맑은 공간(Safe Stage)에 음식이 쏙 안착하도록 자동 상향 렌더링!
+          const receiptOccupiedH = aspectRatio === '9:16' ? 700 : 450;
+          const stageH = targetHeight - receiptOccupiedH;
+          const stageCenterY = stageH / 2;
+
+          if (isLandscape) {
+            const scale = drawW / imgW;
+            renderW = drawW;
+            renderH = imgH * scale;
+            renderX = drawX;
+            renderY = stageCenterY - renderH / 2 + offsetY;
+          } else {
+            // 세로 사진도 영수증 윗 공간을 꽉 채우며 돋보이도록 스케일링
+            const scale = Math.max(drawW / imgW, stageH / imgH);
+            renderW = imgW * scale;
+            renderH = imgH * scale;
+            renderX = drawX + (drawW - renderW) / 2;
+            renderY = stageCenterY - renderH / 2 + offsetY;
+          }
         }
 
         ctx.drawImage(imgElement, renderX, renderY, renderW, renderH);
@@ -190,6 +220,7 @@ export const StampCanvas: React.FC<StampCanvasProps> = ({
     humorTopBadge,
     mealLabel,
     dDayLabel,
+    offsetY,
   ]);
 
   /**
@@ -723,15 +754,64 @@ export const StampCanvas: React.FC<StampCanvasProps> = ({
     ctx.restore();
   };
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    isDraggingRef.current = true;
+    dragStartYRef.current = e.touches[0].clientY;
+    initialOffsetRef.current = offsetY;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDraggingRef.current || !onOffsetChange) return;
+    const deltaY = e.touches[0].clientY - dragStartYRef.current;
+    // 캔버스 레티나 스케일(1080x1920)에 맞추어 변환 (약 2.5배)
+    const newOffset = Math.max(-500, Math.min(350, initialOffsetRef.current + deltaY * 2.5));
+    onOffsetChange(newOffset);
+  };
+
+  const handleTouchEnd = () => {
+    isDraggingRef.current = false;
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    isDraggingRef.current = true;
+    dragStartYRef.current = e.clientY;
+    initialOffsetRef.current = offsetY;
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDraggingRef.current || !onOffsetChange) return;
+    const deltaY = e.clientY - dragStartYRef.current;
+    const newOffset = Math.max(-500, Math.min(350, initialOffsetRef.current + deltaY * 2.5));
+    onOffsetChange(newOffset);
+  };
+
+  const handleMouseUp = () => {
+    isDraggingRef.current = false;
+  };
+
   return (
-    <div className="relative w-full max-w-[420px] mx-auto rounded-3xl overflow-hidden shadow-2xl bg-neutral-900 border border-neutral-800/80">
+    <div 
+      className="relative w-full max-w-[420px] mx-auto rounded-3xl overflow-hidden shadow-2xl bg-neutral-900 border border-neutral-800/80 cursor-ns-resize select-none touch-none"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
+    >
       <canvas
         ref={canvasRef}
-        className="w-full h-auto block"
+        className="w-full h-auto block pointer-events-none"
         style={{
           aspectRatio: aspectRatio === '9:16' ? '9/16' : '1/1',
         }}
       />
+
+      {/* 상하 구도 조절 플로팅 힌트 뱃지 */}
+      <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-sm border border-white/10 px-2.5 py-1 rounded-full text-[10px] text-white/80 font-medium flex items-center gap-1 shadow-sm pointer-events-none">
+        <span>↕️ 사진을 위아래로 밀어 구도 조절</span>
+      </div>
     </div>
   );
 };

@@ -34,6 +34,7 @@ import {
   calculateFastingHours 
 } from './utils/subscription';
 import { ProModal } from './components/ProModal';
+import { EditNutritionModal } from './components/EditNutritionModal';
 import { UserPlan } from './types/diet';
 
 // 초기 데모용 프리셋 식단 데이터 (실제 사진과 100% 일치하는 식단 세트)
@@ -156,8 +157,10 @@ export const App: React.FC = () => {
     }
   });
 
-  const [template, setTemplate] = useState<StampTemplate>('polaroid');
+  const [template, setTemplate] = useState<StampTemplate>('receipt');
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>('9:16');
+  const [photoOffsetY, setPhotoOffsetY] = useState<number>(0);
+  const [isEditNutritionOpen, setIsEditNutritionOpen] = useState<boolean>(false);
   
   // 👑 Pro 구독 상태 및 일일 잔여 횟수 관리
   const [userPlan, setUserPlanState] = useState<UserPlan>(getUserPlan);
@@ -429,13 +432,13 @@ export const App: React.FC = () => {
     canvas.toBlob(async (blob) => {
       if (!blob) return;
 
-      const file = new File([blob], 'dietsnap-story.jpg', { type: 'image/jpeg' });
+      const file = new File([blob], 'dietsnap.jpg', { type: 'image/jpeg' });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         try {
           await navigator.share({
             files: [file],
-            title: 'DietSnap 오식완',
-            text: `${nutrition.name} 오식완 완료! ✨`,
+            title: '오늘의 오식완 스탬프',
+            text: `${nutrition.name} (#오식완 #DietSnap)`,
           });
         } catch (err) {
           console.log('Share canceled or failed', err);
@@ -448,7 +451,7 @@ export const App: React.FC = () => {
   };
 
   // 9. 모바일 전체화면 토글
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [, setIsFullscreen] = useState(false);
   const handleToggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen?.().then(() => setIsFullscreen(true)).catch(() => {});
@@ -458,7 +461,11 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#111215] text-neutral-100 flex flex-col items-center justify-start pb-24 font-sans">
+    <div className={`bg-[#111215] text-neutral-100 flex flex-col items-center font-sans ${
+      currentView === 'editor' 
+        ? 'h-[100dvh] w-full max-w-md mx-auto overflow-hidden touch-none select-none justify-between' 
+        : 'min-h-screen w-full pb-24 justify-start'
+    }`}>
       {/* 1) 카메라 즉시 촬영 전용 숨김 인풋 (capture="environment") */}
       <input
         ref={cameraInputRef}
@@ -479,7 +486,7 @@ export const App: React.FC = () => {
       />
 
       {/* 상단 네비게이션 헤더 */}
-      <header className="w-full max-w-md px-3 py-2.5 border-b border-neutral-800/80 sticky top-0 bg-[#111215]/95 backdrop-blur-md z-30 flex items-center justify-between gap-1">
+      <header className="w-full max-w-md px-3 py-2 border-b border-neutral-800/80 sticky top-0 bg-[#111215]/95 backdrop-blur-md z-30 flex items-center justify-between gap-1 shrink-0">
         <div className="flex items-center gap-1.5 shrink-0">
           {/* 상황별 뒤로가기 버튼 */}
           {currentView === 'editor' ? (
@@ -506,7 +513,7 @@ export const App: React.FC = () => {
             </div>
           )}
 
-          <div className="shrink-0">
+          <div className="shrink-0 cursor-pointer" onClick={() => changeView('intro')}>
             <h1 className="text-sm font-bold tracking-tight text-white flex items-center gap-1 whitespace-nowrap">
               DietSnap <span className="text-[9px] px-1 py-0.2 rounded bg-neutral-800 text-neutral-400 font-mono">v1.0</span>
             </h1>
@@ -544,7 +551,7 @@ export const App: React.FC = () => {
             <Maximize2 className="w-3.5 h-3.5" />
           </button>
 
-          {/* 👑 월 990원 / 연 5,500원 Pro 모달 오픈 버튼 */}
+          {/* 👑 Pro 모달 오픈 버튼 */}
           <button
             onClick={() => setIsProModalOpen(true)}
             className={`text-[11px] px-2 py-1 rounded-full font-bold flex items-center gap-1 transition-all shrink-0 ${
@@ -586,32 +593,11 @@ export const App: React.FC = () => {
           onOpenProModal={() => setIsProModalOpen(true)}
         />
       ) : (
-        /* 3. 에디터 화면 (스탬프 캔버스 & 1초 보정 칩 & 공유/저장) */
-        <main className="w-full max-w-md px-3 pt-2 pb-10 flex flex-col items-center gap-3">
-          {/* 빠른 테스트용 프리셋 칩 */}
-          <div className="w-full flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
-            <span className="text-[10px] text-neutral-400 font-semibold shrink-0">추천 식단:</span>
-            {SAMPLE_PRESETS.map((preset) => (
-              <button
-                key={preset.name}
-                onClick={() => handleSelectPreset(preset)}
-                className="text-[11px] px-2 py-0.5 rounded-lg bg-neutral-900 border border-neutral-800 hover:border-neutral-600 text-neutral-300 shrink-0 transition active:scale-95 whitespace-nowrap"
-              >
-                {preset.name}
-              </button>
-            ))}
-          </div>
-
-          {/* 알림 토스트 */}
-          {statusMessage && !isAnalyzing && (
-            <div className="w-full bg-emerald-950/60 border border-emerald-500/50 rounded-xl px-3 py-2 text-xs text-emerald-300 font-bold flex items-center justify-center gap-1.5 shadow-lg">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              <span className="truncate">{statusMessage}</span>
-            </div>
-          )}
-
-          {/* 캔버스 스탬프 뷰어 영역 */}
-          <div className="relative w-full">
+        /* 3. 에디터 화면 (스크롤 0% 100dvh 풀스크린 카메라 에디터) */
+        <main className="w-full max-w-md flex-1 min-h-0 px-3 py-1 flex flex-col justify-between overflow-hidden">
+          
+          {/* 상단 캔버스 스탬프 뷰어 영역 (flex-1 탄력 스케일링) */}
+          <div className="relative w-full flex-1 min-h-0 flex items-center justify-center overflow-hidden py-1">
             {isAnalyzing && (
               <div className="absolute inset-0 z-20 bg-neutral-950/80 backdrop-blur-md rounded-3xl flex flex-col items-center justify-center gap-3">
                 <RefreshCw className="w-9 h-9 text-rose-400 animate-spin" />
@@ -626,93 +612,128 @@ export const App: React.FC = () => {
               </div>
             )}
 
-            <StampCanvas
-              imageSrc={imageSrc}
-              nutrition={nutrition}
-              portion={portion}
-              template={template}
-              aspectRatio={aspectRatio}
-              isPro={isPro}
-              onCanvasReady={(canvas) => {
-                canvasElementRef.current = canvas;
-              }}
-            />
+            <div className="h-full max-h-full aspect-[9/16] flex items-center justify-center">
+              <StampCanvas
+                imageSrc={imageSrc}
+                nutrition={nutrition}
+                portion={portion}
+                template={template}
+                aspectRatio={aspectRatio}
+                isPro={isPro}
+                offsetY={photoOffsetY}
+                onOffsetChange={setPhotoOffsetY}
+                onCanvasReady={(canvas) => {
+                  canvasElementRef.current = canvas;
+                }}
+              />
+            </div>
           </div>
 
-          {/* 1초 보정 칩 & 수치 직접 수정 인터랙션 */}
-          <PortionChips
-            portion={portion}
-            onPortionChange={handlePortionChange}
-            nutrition={nutrition}
-            onNutritionChange={handleNutritionChange}
-            template={template}
-            onTemplateChange={setTemplate}
-            aspectRatio={aspectRatio}
-            onAspectRatioChange={setAspectRatio}
-            isPro={isPro}
-          />
+          {/* 하단 통합 컨트롤러 바 (스크롤 0초 인터랙션) */}
+          <div className="w-full shrink-0 space-y-2 pt-1 pb-1">
+            {/* 1단: 템플릿 4종 탭 (캔버스 바로 밑 밀착 배치) */}
+            <div className="grid grid-cols-4 gap-1 bg-neutral-900/90 p-1 rounded-2xl border border-neutral-800/90 shadow-sm">
+              {[
+                { id: 'receipt' as StampTemplate, label: '🧾 성수 영수증' },
+                { id: 'pink_receipt' as StampTemplate, label: '🌸 핑크 라벨', isPro: true },
+                { id: 'polaroid' as StampTemplate, label: '📷 폴라로이드' },
+                { id: 'vintage_ticket' as StampTemplate, label: '🎫 빈티지 티켓', isPro: true },
+              ].map((tpl) => (
+                <button
+                  key={tpl.id}
+                  onClick={() => {
+                    if (tpl.isPro && !isPro) {
+                      setIsProModalOpen(true);
+                      return;
+                    }
+                    setTemplate(tpl.id);
+                  }}
+                  className={`py-2 px-1 text-[11px] font-bold rounded-xl transition active:scale-95 flex items-center justify-center gap-0.5 whitespace-nowrap ${
+                    template === tpl.id
+                      ? 'bg-neutral-100 text-neutral-950 shadow-sm'
+                      : 'text-neutral-400 hover:text-white'
+                  }`}
+                >
+                  <span className="truncate">{tpl.label}</span>
+                  {tpl.isPro && !isPro && <Crown className="w-2.5 h-2.5 text-amber-400 shrink-0" />}
+                </button>
+              ))}
+            </div>
 
-          {/* 에러 발생 시 안내 배너 */}
-          {errorMessage && (
-            <div className="w-full bg-rose-950/60 border border-rose-800 rounded-xl p-3 text-xs text-rose-300 flex items-start justify-between">
-              <div>
-                <p className="font-bold">⚠️ 분석 오류 발생</p>
-                <p className="pt-0.5 opacity-90">{errorMessage}</p>
+            {/* 2단: 1초 양 보정 & 인스타 방어 모드 & 수치 수정 모달 (한 줄 콤팩트 바) */}
+            <div className="flex items-center justify-between gap-1.5 px-0.5">
+              {/* 끼니/유머 퀵 토글 */}
+              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar flex-1">
+                {['none', 'zero_cal', 'cheating'].map((mode) => (
+                  <button
+                    key={mode}
+                    onClick={() => handlePortionChange({ ...portion, humorMode: mode as any })}
+                    className={`py-1 px-2 rounded-lg text-[10px] font-bold whitespace-nowrap border transition ${
+                      (portion.humorMode ?? 'none') === mode
+                        ? 'bg-amber-400 text-neutral-950 border-amber-300 shadow-sm'
+                        : 'bg-neutral-900 text-neutral-400 border-neutral-800'
+                    }`}
+                  >
+                    {mode === 'none' ? '정상수치' : mode === 'zero_cal' ? '0 kcal 🤫' : '치팅데이 🍕'}
+                  </button>
+                ))}
+
+                {/* 양 보정 소/보통/곱 */}
+                {[
+                  { label: '소식 (0.8x)', scale: 0.8 },
+                  { label: '보통 (1.0x)', scale: 1.0 },
+                  { label: '곱빼기 (1.25x)', scale: 1.25 },
+                ].map((p) => (
+                  <button
+                    key={p.label}
+                    onClick={() => handlePortionChange({ ...portion, scale: p.scale, activeLabel: p.label })}
+                    className={`py-1 px-2 rounded-lg text-[10px] font-bold whitespace-nowrap border transition ${
+                      portion.scale === p.scale
+                        ? 'bg-neutral-200 text-neutral-950 border-white shadow-sm'
+                        : 'bg-neutral-900 text-neutral-400 border-neutral-800'
+                    }`}
+                  >
+                    {p.label.split(' ')[0]}
+                  </button>
+                ))}
               </div>
+
+              {/* 수치 직접 수정 버튼 */}
               <button
-                onClick={() => setErrorMessage(null)}
-                className="text-rose-400 hover:text-white px-1.5 py-0.5 font-bold"
+                onClick={() => setIsEditNutritionOpen(true)}
+                className="py-1 px-2.5 rounded-lg bg-neutral-850 hover:bg-neutral-800 text-neutral-300 text-[10px] font-bold border border-neutral-750 whitespace-nowrap shrink-0 flex items-center gap-1 active:scale-95 transition"
               >
-                ✕
+                <span>수치수정</span>
               </button>
             </div>
-          )}
 
-          {/* 하단 핵심 액션 버튼 바 */}
-          <div className="w-full space-y-2 pt-1">
-            <div className="grid grid-cols-2 gap-2">
-              {/* 1. 즉시 카메라 촬영 버튼 */}
+            {/* 3단: 메인 빅 액션 버튼 [🚀 인스타 스토리 즉시 공유] & [다시 촬영] / [저장] */}
+            <div className="flex items-center gap-1.5 pt-0.5">
               <button
                 onClick={handleTriggerCapture}
-                className="py-2.5 px-3 bg-neutral-100 hover:bg-white text-neutral-950 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition active:scale-[0.98] whitespace-nowrap"
+                className="py-2.5 px-3 bg-neutral-850 hover:bg-neutral-800 text-neutral-300 rounded-xl font-bold text-xs flex items-center justify-center gap-1 border border-neutral-750 shrink-0 active:scale-95 transition"
+                title="다시 촬영"
               >
-                <Camera className="w-3.5 h-3.5 text-neutral-950 shrink-0" />
-                <span>다시 촬영</span>
+                <Camera className="w-4 h-4" />
               </button>
 
-              {/* 2. 갤러리 앨범 선택 버튼 */}
               <button
-                onClick={handleTriggerGallery}
-                className="py-2.5 px-3 bg-neutral-850 hover:bg-neutral-800 text-neutral-200 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 border border-neutral-750 shadow-sm transition active:scale-[0.98] whitespace-nowrap"
+                onClick={handleShare}
+                className="flex-1 py-3 px-3 bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500 hover:opacity-95 text-white rounded-xl font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-lg shadow-pink-500/20 active:scale-[0.98] transition whitespace-nowrap"
               >
-                <Upload className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-                <span>앨범에서 선택</span>
+                <Share2 className="w-4 h-4 shrink-0" />
+                <span>인스타 스토리 즉시 공유</span>
+              </button>
+
+              <button
+                onClick={handleDownload}
+                className="py-2.5 px-3 bg-neutral-850 hover:bg-neutral-800 text-neutral-300 rounded-xl font-bold text-xs flex items-center justify-center gap-1 border border-neutral-750 shrink-0 active:scale-95 transition"
+                title="고해상도 JPG 파일로 직접 저장"
+              >
+                <Download className="w-4 h-4" />
               </button>
             </div>
-
-            {/* 3. 인스타그램 스토리 공유 버튼 */}
-            <button
-              onClick={handleShare}
-              className="w-full py-3 px-4 bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500 hover:opacity-95 text-white rounded-xl font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-md shadow-pink-500/20 transition active:scale-[0.98] whitespace-nowrap"
-            >
-              <Share2 className="w-4 h-4 shrink-0" />
-              <span>인스타 스토리 즉시 공유</span>
-            </button>
           </div>
-
-          {/* JPG 파일 직접 다운로드 링크 */}
-          <button
-            onClick={handleDownload}
-            className="text-[11px] text-neutral-400 hover:text-neutral-200 flex items-center gap-1 pt-0.5 underline underline-offset-4"
-          >
-            <Download className="w-3 h-3 shrink-0" />
-            <span>고해상도 JPG 파일로 직접 저장하기</span>
-          </button>
-
-          {/* 안내 및 면책 조항 */}
-          <p className="text-[10px] text-neutral-500 text-center leading-relaxed pt-2 px-2">
-            * 분석된 영양 정보는 식약처 기준 AI 추정치이며 실제 조리법에 따라 오차가 있을 수 있습니다.
-          </p>
         </main>
       )}
 
@@ -723,6 +744,17 @@ export const App: React.FC = () => {
         onPlanChanged={(newPlan) => {
           setUserPlanState(newPlan);
           setRemainingCount(getRemainingCount());
+        }}
+      />
+
+      {/* ✏️ 수치 직접 수정 모달 */}
+      <EditNutritionModal
+        isOpen={isEditNutritionOpen}
+        onClose={() => setIsEditNutritionOpen(false)}
+        nutrition={nutrition}
+        onSave={(updated) => {
+          handleNutritionChange(updated);
+          setIsEditNutritionOpen(false);
         }}
       />
     </div>
