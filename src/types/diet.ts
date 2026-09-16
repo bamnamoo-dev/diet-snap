@@ -14,10 +14,12 @@ export interface NutritionItem {
   fat: number;           // 지방 (g)
   diet_comment: string;  // 인스타 스탬프용 위트 있는 한 줄
   custom_chips?: CustomChip[]; // 음식 종류별 AI 맞춤 연동형 1초 보정 칩 (최대 3~4개)
+  fastingHours?: string; // 16:8 간헐적 단식 자동 계산 공복 시간 (예: "16h 30m")
 }
 
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'cheating';
 export type HumorMode = 'none' | 'zero_cal' | 'cheating' | 'cardio';
+export type UserPlan = 'free' | 'pro';
 
 export interface PortionModifier {
   scale: number;        // 소(0.8), 보통(1.0), 곱빼기(1.3)
@@ -30,3 +32,4 @@ export interface PortionModifier {
 
 export type StampTemplate = 'receipt' | 'polaroid' | 'pink_receipt' | 'vintage_ticket';
 export type AspectRatio = '9:16' | '1:1';
+

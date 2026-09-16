@@ -22,8 +22,19 @@ import {
   RefreshCw,
   Maximize2,
   ArrowLeft,
-  BookOpen
+  BookOpen,
+  Sparkles
 } from 'lucide-react';
+import { 
+  getUserPlan, 
+  setUserPlan, 
+  getRemainingCount, 
+  canTakePhoto, 
+  incrementDailyUsage, 
+  calculateFastingHours 
+} from './utils/subscription';
+import { ProModal } from './components/ProModal';
+import { UserPlan } from './types/diet';
 
 // 초기 데모용 프리셋 식단 데이터 (실제 사진과 100% 일치하는 식단 세트)
 const SAMPLE_PRESETS: { name: string; img: string; data: NutritionItem }[] = [
@@ -148,7 +159,13 @@ export const App: React.FC = () => {
 
   const [template, setTemplate] = useState<StampTemplate>('polaroid');
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>('9:16');
-  const [isPro, setIsPro] = useState<boolean>(false);
+  
+  // 👑 Pro 구독 상태 및 일일 잔여 횟수 관리
+  const [userPlan, setUserPlanState] = useState<UserPlan>(getUserPlan);
+  const [remainingCount, setRemainingCount] = useState<number>(getRemainingCount);
+  const [isProModalOpen, setIsProModalOpen] = useState<boolean>(false);
+  const isPro = userPlan === 'pro';
+
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [compressStats, setCompressStats] = useState<CompressionResult | null>(null);
 
@@ -209,8 +226,13 @@ export const App: React.FC = () => {
 
   const isCameraRef = useRef<boolean>(false);
 
-  // 카메라 촬영 트리거 헬퍼 (카메라 앱 전환 전 에디터 뷰로 사전 마킹하여 새로고침 방어)
+  // 카메라 촬영 트리거 헬퍼 (일일 한도 초과 시 Pro 업그레이드 모달 호출)
   const handleTriggerCapture = () => {
+    if (!canTakePhoto()) {
+      setIsProModalOpen(true);
+      return;
+    }
+
     try {
       sessionStorage.setItem('dietsnap_active_view', 'editor');
       localStorage.setItem('dietsnap_active_view', 'editor');
@@ -222,8 +244,13 @@ export const App: React.FC = () => {
     }
   };
 
-  // 앨범 파일 선택 트리거 헬퍼
+  // 앨범 파일 선택 트리거 헬퍼 (일일 한도 초과 시 Pro 업그레이드 모달 호출)
   const handleTriggerGallery = () => {
+    if (!canTakePhoto()) {
+      setIsProModalOpen(true);
+      return;
+    }
+
     try {
       sessionStorage.setItem('dietsnap_active_view', 'editor');
       localStorage.setItem('dietsnap_active_view', 'editor');
@@ -278,6 +305,22 @@ export const App: React.FC = () => {
       }
 
       const aiResult: NutritionItem = await response.json();
+
+      // ⏳ 16:8 간헐적 단식 공복 시간 자동 계산 (수동 입력 0초)
+      const now = new Date();
+      const lastRecord = records.length > 0 ? records[0] : null;
+      const fasting = calculateFastingHours(
+        lastRecord?.dateStr || (lastRecord?.timestamp ? new Date(lastRecord.timestamp).toISOString() : undefined),
+        now
+      );
+      if (fasting) {
+        aiResult.fastingHours = fasting;
+      }
+
+      // 🔢 일일 사용량 1 증가 및 잔여 횟수 업데이트
+      incrementDailyUsage();
+      setRemainingCount(getRemainingCount());
+
       setNutrition(aiResult);
       const initialPortion = { scale: 1.0, excludeSoup: false };
       setPortion(initialPortion);
@@ -285,7 +328,6 @@ export const App: React.FC = () => {
       setTimeout(() => setStatusMessage(''), 3500);
 
       // 💾 4. 분석된 식단 즉시 IndexedDB 갤러리에 영구 자동 저장!
-      const now = new Date();
       const dateStr = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
       const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
       const dateKey = now.toISOString().slice(0, 10);
@@ -509,17 +551,17 @@ export const App: React.FC = () => {
             <Maximize2 className="w-4 h-4" />
           </button>
 
-          {/* 3,300원 Pro 워터마크 제거 토글 */}
+          {/* 👑 월 990원 / 연 5,500원 Pro 모달 오픈 버튼 */}
           <button
-            onClick={() => setIsPro(!isPro)}
-            className={`text-xs px-2.5 py-1.5 rounded-full font-semibold flex items-center gap-1 transition-all ${
+            onClick={() => setIsProModalOpen(true)}
+            className={`text-xs px-2.5 py-1.5 rounded-full font-bold flex items-center gap-1 transition-all ${
               isPro
                 ? 'bg-amber-400 text-neutral-950 shadow-md shadow-amber-400/20'
-                : 'bg-neutral-800/90 text-neutral-300 border border-neutral-700 hover:border-amber-400/50'
+                : 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-300 border border-amber-500/40 hover:border-amber-400'
             }`}
           >
             <Crown className={`w-3.5 h-3.5 ${isPro ? 'text-neutral-950' : 'text-amber-400'}`} />
-            {isPro ? 'PRO' : '3,300원'}
+            {isPro ? `PRO (${remainingCount}/15)` : '월 990원 PRO'}
           </button>
         </div>
       </header>
@@ -536,6 +578,9 @@ export const App: React.FC = () => {
           onResumeWork={() => changeView('editor')}
           onOpenHistoryClick={() => changeView('gallery')}
           historyCount={records.length}
+          isPro={isPro}
+          remainingCount={remainingCount}
+          onOpenProModal={() => setIsProModalOpen(true)}
         />
       ) : currentView === 'gallery' ? (
         /* 2. 오식완 식단 갤러리 관리 페이지 */
@@ -544,6 +589,8 @@ export const App: React.FC = () => {
           onSelectRecord={handleSelectRecordFromGallery}
           onDeleteRecord={handleDeleteRecord}
           onNewCaptureClick={handleTriggerCapture}
+          isPro={isPro}
+          onOpenProModal={() => setIsProModalOpen(true)}
         />
       ) : (
         /* 3. 에디터 화면 (스탬프 캔버스 & 1초 보정 칩 & 공유/저장) */
@@ -674,6 +721,16 @@ export const App: React.FC = () => {
           </p>
         </main>
       )}
+
+      {/* 👑 DietSnap Pro 구독 결제 & 혜택 안내 모달 */}
+      <ProModal
+        isOpen={isProModalOpen}
+        onClose={() => setIsProModalOpen(false)}
+        onPlanChanged={(newPlan) => {
+          setUserPlanState(newPlan);
+          setRemainingCount(getRemainingCount());
+        }}
+      />
     </div>
   );
 };

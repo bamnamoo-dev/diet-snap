@@ -12,7 +12,12 @@ import {
   Layers,
   Download,
   Share2,
-  X
+  X,
+  FileText,
+  Lock,
+  Crown,
+  ClipboardCheck,
+  CalendarCheck
 } from 'lucide-react';
 
 interface GalleryViewProps {
@@ -20,6 +25,8 @@ interface GalleryViewProps {
   onSelectRecord: (record: SavedDietRecord) => void;
   onDeleteRecord: (id: string) => void;
   onNewCaptureClick: () => void;
+  isPro?: boolean;
+  onOpenProModal?: () => void;
 }
 
 export const GalleryView: React.FC<GalleryViewProps> = ({
@@ -27,10 +34,17 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
   onSelectRecord,
   onDeleteRecord,
   onNewCaptureClick,
+  isPro = false,
+  onOpenProModal,
 }) => {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [isDailySummaryOpen, setIsDailySummaryOpen] = useState(false);
+  const [isTrainerReportOpen, setIsTrainerReportOpen] = useState(false);
+  const [isWeeklyWrapOpen, setIsWeeklyWrapOpen] = useState(false);
+
   const dailyCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const trainerCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const weeklyCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
   // 오늘 날짜 키 (YYYY-MM-DD)
   const todayKey = new Date().toISOString().slice(0, 10);
@@ -58,11 +72,45 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
     return sum + Math.round(r.nutrition.fat * scale);
   }, 0);
 
+  // 최근 7일(주간) 기록 통계 계산
+  const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const weekRecords = records.filter((r) => r.dateKey >= oneWeekAgo);
+  const weekTotalCalories = weekRecords.reduce((sum, r) => {
+    const scale = r.portion?.scale ?? 1.0;
+    return sum + Math.round(r.nutrition.calories * scale);
+  }, 0);
+  const weekAvgCalories = weekRecords.length > 0 ? Math.round(weekTotalCalories / Math.min(7, Math.max(1, new Set(weekRecords.map(r => r.dateKey)).size))) : 0;
+  const weekAvgProtein = weekRecords.length > 0 ? Math.round(weekRecords.reduce((sum, r) => sum + Math.round(r.nutrition.protein * (r.portion?.scale ?? 1.0)), 0) / weekRecords.length) : 0;
+
   // 오늘의 3끼 통합 영수증 캔버스 렌더링
   const handleGenerateDailySummary = () => {
     setIsDailySummaryOpen(true);
     setTimeout(() => {
       renderDailyCollage();
+    }, 100);
+  };
+
+  // PT 쌤 제출용 리포트 모달 열기 (무료 유저일 경우 Pro 모달 호출)
+  const handleOpenTrainerReport = () => {
+    if (!isPro) {
+      if (onOpenProModal) onOpenProModal();
+      return;
+    }
+    setIsTrainerReportOpen(true);
+    setTimeout(() => {
+      renderTrainerReport();
+    }, 100);
+  };
+
+  // 주간 오식완 롱 영수증 모달 열기 (무료 유저일 경우 Pro 모달 호출)
+  const handleOpenWeeklyWrap = () => {
+    if (!isPro) {
+      if (onOpenProModal) onOpenProModal();
+      return;
+    }
+    setIsWeeklyWrapOpen(true);
+    setTimeout(() => {
+      renderWeeklyWrap();
     }, 100);
   };
 
@@ -253,6 +301,362 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
     });
   };
 
+  /**
+   * 📋 PT / 필라테스 쌤 제출용 원클릭 리포트 캔버스 렌더러 (1080 x 1440)
+   */
+  const renderTrainerReport = async () => {
+    const canvas = trainerCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    canvas.width = 1080;
+    canvas.height = 1440;
+
+    // 순백색 고해상도 보고서 배경
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, 1080, 1440);
+
+    // 상단 브랜딩 바
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(0, 0, 1080, 160);
+
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = '800 20px "Space Mono", monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('DIETSNAP COACH REPORT', 64, 60);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '800 36px "Noto Sans KR", sans-serif';
+    ctx.fillText('회원 일일 식단 제출용 리포트', 64, 110);
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '700 22px "Space Mono", monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(`DATE: ${todayKey}`, 1080 - 64, 110);
+
+    // 식단 항목 목록 (최대 4개)
+    const items = todayRecords.slice(0, 4);
+    let startY = 190;
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      const scale = item.portion?.scale ?? 1.0;
+      const soupScale = item.portion?.excludeSoup ? 0.85 : 1.0;
+      const cals = Math.round(item.nutrition.calories * scale * soupScale);
+      const carbs = Math.round(item.nutrition.carbs * scale);
+      const protein = Math.round(item.nutrition.protein * scale);
+      const fat = Math.round(item.nutrition.fat * scale);
+
+      const rowH = 190;
+
+      // 행 카드 배경
+      ctx.fillStyle = '#f8fafc';
+      ctx.beginPath();
+      ctx.roundRect(64, startY, 1080 - 128, rowH, 20);
+      ctx.fill();
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // 사진 썸네일
+      await drawImageCover(ctx, item.imageSrc, 84, startY + 20, 150, 150, 16);
+
+      // 끼니 뱃지 & 시간
+      const mealName = item.portion?.mealType ? {
+        breakfast: '아침 BREAKFAST',
+        lunch: '점심 LUNCH',
+        dinner: '저녁 DINNER',
+        snack: '간식 SNACK',
+        cheating: '치팅 CHEATING'
+      }[item.portion.mealType] : `식사 #${i + 1}`;
+
+      ctx.fillStyle = '#2563eb';
+      ctx.font = '800 20px "Noto Sans KR", sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(mealName, 260, startY + 55);
+
+      // 메뉴명
+      ctx.fillStyle = '#0f172a';
+      ctx.font = '700 28px "Noto Sans KR", sans-serif';
+      const menuName = item.nutrition.name.length > 20 ? item.nutrition.name.slice(0, 19) + '...' : item.nutrition.name;
+      ctx.fillText(menuName, 260, startY + 100);
+
+      // 칼로리 & 탄단지 상세 수치
+      ctx.fillStyle = '#dc2626';
+      ctx.font = '800 26px "Space Mono", monospace';
+      ctx.fillText(`${cals} kcal`, 260, startY + 145);
+
+      ctx.fillStyle = '#64748b';
+      ctx.font = '600 20px "Noto Sans KR", sans-serif';
+      ctx.fillText(`(탄 ${carbs}g · 단 ${protein}g · 지 ${fat}g)`, 420, startY + 145);
+
+      startY += rowH + 20;
+    }
+
+    // 하단 요약 대형 박스
+    const summaryY = 1080;
+    const summaryH = 260;
+
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath();
+    ctx.roundRect(64, summaryY, 1080 - 128, summaryH, 24);
+    ctx.fill();
+
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = '700 22px "Noto Sans KR", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('오늘의 총 영양 결산 요약', 104, summaryY + 60);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 68px "Space Mono", sans-serif';
+    ctx.fillText(`${todayCalories}`, 104, summaryY + 145);
+
+    ctx.font = '700 28px "Space Mono", monospace';
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText('KCAL', 104 + ctx.measureText(`${todayCalories}`).width + 16, summaryY + 145);
+
+    // 매크로 3분할 뱃지
+    const macroX = 580;
+    ctx.fillStyle = '#334155';
+    ctx.beginPath();
+    ctx.roundRect(macroX, summaryY + 40, 1080 - 128 - macroX + 24, 180, 16);
+    ctx.fill();
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '600 20px "Noto Sans KR", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('탄수화물', macroX + 70, summaryY + 85);
+    ctx.fillText('단백질', macroX + 190, summaryY + 85);
+    ctx.fillText('지방', macroX + 310, summaryY + 85);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '800 32px "Space Mono", monospace';
+    ctx.fillText(`${todayCarbs}g`, macroX + 70, summaryY + 135);
+    ctx.fillStyle = '#f43f5e';
+    ctx.fillText(`${todayProtein}g`, macroX + 190, summaryY + 135);
+    ctx.fillStyle = '#38bdf8';
+    ctx.fillText(`${todayFat}g`, macroX + 310, summaryY + 135);
+
+    // 최하단
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '600 18px "Space Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('DIETSNAP COACH REPORT · VERIFIED BY AI NUTRITIONIST', 540, 1400);
+  };
+
+  /**
+   * 🧾 주간 오식완 결산 롱 영수증 캔버스 렌더러 (1080 x 1920)
+   */
+  const renderWeeklyWrap = async () => {
+    const canvas = weeklyCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    canvas.width = 1080;
+    canvas.height = 1920;
+
+    // 딥 차콜 배경
+    ctx.fillStyle = '#0d0e12';
+    ctx.fillRect(0, 0, 1080, 1920);
+
+    // 상단 헤더
+    ctx.fillStyle = '#f43f5e';
+    ctx.font = '800 24px "Space Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('WEEKLY DIET WRAP #오식완', 540, 110);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 48px "Space Mono", monospace';
+    ctx.fillText('이번 주 식단 결산', 540, 175);
+
+    ctx.fillStyle = '#71717a';
+    ctx.font = '600 22px "Noto Sans KR", sans-serif';
+    ctx.fillText(`최근 7일간의 총 ${weekRecords.length}끼 기록 요약`, 540, 220);
+
+    // 사진 4컷 그리드 (최근 기록 4개)
+    const recent4 = weekRecords.slice(0, 4);
+    const photoY = 270;
+    const photoH = 700;
+
+    if (recent4.length >= 2) {
+      const w = 450;
+      const h = 330;
+      if (recent4[0]) await drawImageCover(ctx, recent4[0].imageSrc, 70, photoY, w, h, 20);
+      if (recent4[1]) await drawImageCover(ctx, recent4[1].imageSrc, 560, photoY, w, h, 20);
+      if (recent4[2]) await drawImageCover(ctx, recent4[2].imageSrc, 70, photoY + h + 20, w, h, 20);
+      if (recent4[3]) await drawImageCover(ctx, recent4[3].imageSrc, 560, photoY + h + 20, w, h, 20);
+    } else if (recent4.length === 1) {
+      await drawImageCover(ctx, recent4[0].imageSrc, 70, photoY, 940, photoH, 24);
+    }
+
+    // 하단 주간 영수증 카드
+    const cardY = 1010;
+    const cardH = 820;
+
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.roundRect(70, cardY, 940, cardH, 28);
+    ctx.fill();
+
+    ctx.fillStyle = '#18181b';
+    ctx.font = '800 36px "Space Mono", monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('WEEKLY STATS', 120, cardY + 80);
+
+    ctx.fillStyle = '#e11d48';
+    ctx.font = '700 24px "Noto Sans KR", sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText('PRO VERIFIED', 1080 - 120, cardY + 80);
+
+    // 점선
+    ctx.strokeStyle = '#e4e4e7';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([8, 8]);
+    ctx.beginPath();
+    ctx.moveTo(120, cardY + 115);
+    ctx.lineTo(1080 - 120, cardY + 115);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 주간 지표 4칸 그리드
+    const gridY = cardY + 160;
+
+    // 지표 1: 주간 총 칼로리
+    ctx.fillStyle = '#71717a';
+    ctx.font = '600 22px "Noto Sans KR", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('주간 총 칼로리', 120, gridY);
+    ctx.fillStyle = '#09090b';
+    ctx.font = '900 44px "Space Mono", monospace';
+    ctx.fillText(`${weekTotalCalories.toLocaleString()}`, 120, gridY + 55);
+    ctx.font = '700 20px "Space Mono", monospace';
+    ctx.fillStyle = '#a1a1aa';
+    ctx.fillText('KCAL', 120 + ctx.measureText(`${weekTotalCalories.toLocaleString()}`).width + 12, gridY + 55);
+
+    // 지표 2: 하루 평균 칼로리
+    ctx.fillStyle = '#71717a';
+    ctx.font = '600 22px "Noto Sans KR", sans-serif';
+    ctx.fillText('하루 평균 섭취', 580, gridY);
+    ctx.fillStyle = '#e11d48';
+    ctx.font = '900 44px "Space Mono", monospace';
+    ctx.fillText(`${weekAvgCalories}`, 580, gridY + 55);
+    ctx.font = '700 20px "Space Mono", monospace';
+    ctx.fillStyle = '#a1a1aa';
+    ctx.fillText('KCAL/DAY', 580 + ctx.measureText(`${weekAvgCalories}`).width + 12, gridY + 55);
+
+    // 지표 3: 평균 단백질
+    ctx.fillStyle = '#71717a';
+    ctx.font = '600 22px "Noto Sans KR", sans-serif';
+    ctx.fillText('끼니당 평균 단백질', 120, gridY + 150);
+    ctx.fillStyle = '#2563eb';
+    ctx.font = '900 44px "Space Mono", monospace';
+    ctx.fillText(`${weekAvgProtein}g`, 120, gridY + 205);
+
+    // 지표 4: 총 기록 수
+    ctx.fillStyle = '#71717a';
+    ctx.font = '600 22px "Noto Sans KR", sans-serif';
+    ctx.fillText('완료한 오식완', 580, gridY + 150);
+    ctx.fillStyle = '#16a34a';
+    ctx.font = '900 44px "Space Mono", monospace';
+    ctx.fillText(`${weekRecords.length}끼`, 580, gridY + 205);
+
+    // 인스타 박제용 한 줄 코멘트 박스
+    ctx.fillStyle = '#f4f4f5';
+    ctx.beginPath();
+    ctx.roundRect(120, cardY + 420, 940 - 100, 150, 20);
+    ctx.fill();
+
+    ctx.fillStyle = '#18181b';
+    ctx.font = '800 28px "Noto Sans KR", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('🎉 이번 주도 완벽하게 오식완 성공!', 540, cardY + 480);
+    ctx.fillStyle = '#71717a';
+    ctx.font = '600 22px "Noto Sans KR", sans-serif';
+    ctx.fillText('꾸준한 기록이 만들어낸 멋진 한 주였습니다 ✨', 540, cardY + 525);
+
+    // 바코드
+    ctx.fillStyle = '#000000';
+    const barY = cardY + 610;
+    const barH = 70;
+    for (let bx = 220; bx < 860; bx += 8) {
+      if (Math.sin(bx * 13) > 0) {
+        ctx.fillRect(bx, barY, Math.sin(bx * 7) > 0.4 ? 5 : 2.5, barH);
+      }
+    }
+
+    ctx.fillStyle = '#71717a';
+    ctx.font = '700 20px "Space Mono", monospace';
+    ctx.fillText('* WEEKLY-WRAP-2026-SEONGSU *', 540, barY + barH + 40);
+  };
+
+  // 트레이너 리포트 다운로드 & 공유
+  const handleDownloadTrainerReport = () => {
+    const canvas = trainerCanvasRef.current;
+    if (!canvas) return;
+    const link = document.createElement('a');
+    link.download = `DietSnap_TrainerReport_${todayKey}.jpg`;
+    link.href = canvas.toDataURL('image/jpeg', 0.95);
+    link.click();
+  };
+
+  const handleShareTrainerReport = async () => {
+    const canvas = trainerCanvasRef.current;
+    if (!canvas) return;
+    canvas.toBlob(async (blob) => {
+      if (!blob) return;
+      const file = new File([blob], 'dietsnap-coach-report.jpg', { type: 'image/jpeg' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: 'DietSnap 트레이너 쌤 식단 리포트',
+            text: `선생님, ${todayKey} 오늘 식단 제출합니다! 🏋️‍♀️`,
+          });
+        } catch (err) {
+          console.log(err);
+        }
+      } else {
+        handleDownloadTrainerReport();
+        alert('트레이너 쌤 제출용 식단표가 저장되었습니다! 카톡으로 전송해보세요 🏋️‍♀️');
+      }
+    }, 'image/jpeg', 0.95);
+  };
+
+  // 주간 결산 롱 영수증 다운로드 & 공유
+  const handleDownloadWeeklyWrap = () => {
+    const canvas = weeklyCanvasRef.current;
+    if (!canvas) return;
+    const link = document.createElement('a');
+    link.download = `DietSnap_WeeklyWrap_${todayKey}.jpg`;
+    link.href = canvas.toDataURL('image/jpeg', 0.95);
+    link.click();
+  };
+
+  const handleShareWeeklyWrap = async () => {
+    const canvas = weeklyCanvasRef.current;
+    if (!canvas) return;
+    canvas.toBlob(async (blob) => {
+      if (!blob) return;
+      const file = new File([blob], 'dietsnap-weekly-wrap.jpg', { type: 'image/jpeg' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: 'DietSnap 이번 주 오식완 결산',
+            text: `이번 주도 완벽하게 오식완 성공! 📸`,
+          });
+        } catch (err) {
+          console.log(err);
+        }
+      } else {
+        handleDownloadWeeklyWrap();
+        alert('주간 결산 롱 영수증이 저장되었습니다! 인스타 스토리에 공유해보세요 ✨');
+      }
+    }, 'image/jpeg', 0.95);
+  };
+
   // 모아보기 다운로드
   const handleDownloadSummary = () => {
     const canvas = dailyCanvasRef.current;
@@ -349,6 +753,43 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
             <span>오늘의 {todayRecords.length}끼 모아보기 일일 영수증 발행</span>
           </button>
         )}
+
+        {/* 🌟 2대 킬러 보고서: PT 쌤 제출용 식단표 & 주간 오식완 롱 영수증 */}
+        <div className="grid grid-cols-2 gap-2 mt-2">
+          <button
+            onClick={handleOpenTrainerReport}
+            className={`py-2.5 px-3 rounded-2xl border text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 ${
+              isPro 
+                ? 'bg-sky-500/15 border-sky-500/30 text-sky-300 hover:bg-sky-500/25' 
+                : 'bg-neutral-900/90 border-neutral-800 text-neutral-300 hover:border-neutral-700'
+            }`}
+          >
+            <ClipboardCheck className="w-4 h-4 text-sky-400 shrink-0" />
+            <span>쌤 제출용 식단표</span>
+            {!isPro && (
+              <span className="px-1.5 py-0.5 bg-amber-500/20 text-amber-300 text-[9px] font-black rounded-md flex items-center gap-0.5 border border-amber-500/30 shrink-0">
+                <Lock className="w-2.5 h-2.5" /> PRO
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={handleOpenWeeklyWrap}
+            className={`py-2.5 px-3 rounded-2xl border text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 ${
+              isPro 
+                ? 'bg-purple-500/15 border-purple-500/30 text-purple-300 hover:bg-purple-500/25' 
+                : 'bg-neutral-900/90 border-neutral-800 text-neutral-300 hover:border-neutral-700'
+            }`}
+          >
+            <CalendarCheck className="w-4 h-4 text-purple-400 shrink-0" />
+            <span>주간 오식완 결산</span>
+            {!isPro && (
+              <span className="px-1.5 py-0.5 bg-amber-500/20 text-amber-300 text-[9px] font-black rounded-md flex items-center gap-0.5 border border-amber-500/30 shrink-0">
+                <Lock className="w-2.5 h-2.5" /> PRO
+              </span>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* 2. 갤러리 피드 헤더 & 새 촬영 버튼 */}
@@ -537,6 +978,86 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                 className="w-full py-2.5 px-4 rounded-xl bg-neutral-800 hover:bg-neutral-750 text-neutral-200 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition"
               >
                 <Download className="w-3.5 h-3.5" /> 고해상도 JPG 파일 저장
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 5. 📋 PT / 필라테스 쌤 제출용 식단표 모달 */}
+      {isTrainerReportOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center p-4">
+          <div className="relative w-full max-w-sm bg-neutral-900 border border-neutral-800 rounded-3xl p-4 flex flex-col items-center gap-3 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="w-full flex items-center justify-between pb-1 border-b border-neutral-800">
+              <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                <ClipboardCheck className="w-4 h-4 text-sky-400" /> 트레이너 쌤 식단 제출 리포트
+              </span>
+              <button
+                onClick={() => setIsTrainerReportOpen(false)}
+                className="p-1 rounded-full text-neutral-400 hover:text-white hover:bg-neutral-800"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* 생성된 캔버스 미리보기 */}
+            <div className="w-full rounded-2xl overflow-hidden shadow-lg border border-neutral-800 bg-white">
+              <canvas ref={trainerCanvasRef} className="w-full h-auto block" style={{ aspectRatio: '3/4' }} />
+            </div>
+
+            {/* 다운로드 및 공유 버튼 */}
+            <div className="w-full space-y-2 pt-1">
+              <button
+                onClick={handleShareTrainerReport}
+                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-sky-500/20 active:scale-95 transition"
+              >
+                <Share2 className="w-4 h-4" /> 카톡으로 쌤에게 즉시 전송
+              </button>
+              <button
+                onClick={handleDownloadTrainerReport}
+                className="w-full py-2.5 px-4 rounded-xl bg-neutral-800 hover:bg-neutral-750 text-neutral-200 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition"
+              >
+                <Download className="w-3.5 h-3.5" /> 식단표 이미지 파일 저장
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 6. 🧾 주간 오식완 롱 영수증 모달 */}
+      {isWeeklyWrapOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center p-4">
+          <div className="relative w-full max-w-sm bg-neutral-900 border border-neutral-800 rounded-3xl p-4 flex flex-col items-center gap-3 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="w-full flex items-center justify-between pb-1 border-b border-neutral-800">
+              <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                <CalendarCheck className="w-4 h-4 text-purple-400" /> 주간 오식완 결산 롱 영수증
+              </span>
+              <button
+                onClick={() => setIsWeeklyWrapOpen(false)}
+                className="p-1 rounded-full text-neutral-400 hover:text-white hover:bg-neutral-800"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* 생성된 캔버스 미리보기 */}
+            <div className="w-full rounded-2xl overflow-hidden shadow-lg border border-neutral-800 bg-black">
+              <canvas ref={weeklyCanvasRef} className="w-full h-auto block" style={{ aspectRatio: '9/16' }} />
+            </div>
+
+            {/* 다운로드 및 공유 버튼 */}
+            <div className="w-full space-y-2 pt-1">
+              <button
+                onClick={handleShareWeeklyWrap}
+                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-purple-500/20 active:scale-95 transition"
+              >
+                <Share2 className="w-4 h-4" /> 인스타 스토리 주간 결산 박제
+              </button>
+              <button
+                onClick={handleDownloadWeeklyWrap}
+                className="w-full py-2.5 px-4 rounded-xl bg-neutral-800 hover:bg-neutral-750 text-neutral-200 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition"
+              >
+                <Download className="w-3.5 h-3.5" /> 롱 영수증 이미지 저장
               </button>
             </div>
           </div>

@@ -17,6 +17,9 @@ interface IntroViewProps {
   onResumeWork: () => void;
   onOpenHistoryClick?: () => void;
   historyCount?: number;
+  isPro?: boolean;
+  remainingCount?: number;
+  onOpenProModal?: () => void;
 }
 
 export const IntroView: React.FC<IntroViewProps> = ({
@@ -28,6 +31,9 @@ export const IntroView: React.FC<IntroViewProps> = ({
   onResumeWork,
   onOpenHistoryClick,
   historyCount = 0,
+  isPro = false,
+  remainingCount = 3,
+  onOpenProModal,
 }) => {
   return (
     <div className="w-full max-w-md px-4 pt-2 pb-12 flex flex-col items-center gap-5 font-sans">
@@ -61,13 +67,27 @@ export const IntroView: React.FC<IntroViewProps> = ({
         <div className="absolute bottom-3 left-3 w-5 h-5 border-b-2 border-l-2 border-rose-400/70 rounded-bl-sm pointer-events-none" />
         <div className="absolute bottom-3 right-3 w-5 h-5 border-b-2 border-r-2 border-rose-400/70 rounded-br-sm pointer-events-none" />
 
-        {/* 뷰파인더 상단 인디케이터 */}
-        <div className="w-full flex items-center justify-between text-[11px] font-mono text-neutral-400/80 z-10 px-1">
+        {/* 뷰파인더 상단 인디케이터 & 잔여 촬영 횟수 */}
+        <div className="w-full flex items-center justify-between text-[11px] font-mono z-10 px-1">
           <span className="flex items-center gap-1.5 font-semibold text-rose-400">
             <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
             TODAY'S DIET LOG
           </span>
-          <span className="tracking-wider text-neutral-400 font-semibold">O-SIK-WAN ARCHIVE</span>
+          
+          <button
+            onClick={onOpenProModal}
+            className={`px-2.5 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 transition active:scale-95 ${
+              isPro 
+                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' 
+                : 'bg-white/10 text-neutral-200 hover:bg-white/15 border border-white/10'
+            }`}
+          >
+            {isPro ? (
+              <>👑 PRO · {remainingCount}/15장 남음</>
+            ) : (
+              <>무료 {remainingCount}/3장 남음 · <span className="text-amber-400 font-extrabold">UPGRADE</span></>
+            )}
+          </button>
         </div>
 
         {/* 중앙 감성 셔터 렌즈 비주얼 */}

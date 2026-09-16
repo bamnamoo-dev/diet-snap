@@ -153,7 +153,10 @@ export const StampCanvas: React.FC<StampCanvasProps> = ({
         renderPolaroidStamp(ctx, targetWidth, targetHeight);
       }
 
-      // 4. 워터마크 (무료 유저일 경우)
+      // 4. 상단 감성 뱃지 (공복 시간 & 유머 모드 스티커)
+      renderTopFloatingBadges(ctx, targetWidth);
+
+      // 5. 워터마크 (무료 유저일 경우만 우측 하단 자동 인쇄)
       if (!isPro) {
         renderWatermark(ctx, targetWidth, targetHeight, template);
       }
@@ -628,6 +631,69 @@ export const StampCanvas: React.FC<StampCanvasProps> = ({
       currentX += barW + unitWidth;
     });
 
+    ctx.restore();
+  };
+
+  /**
+   * 상단 감성 플로팅 뱃지 (16:8 간헐적 단식 공복 시간 & 유머 모드 스티커)
+   */
+  const renderTopFloatingBadges = (ctx: CanvasRenderingContext2D, width: number) => {
+    const badges: { text: string; bg: string; color: string; border: string }[] = [];
+
+    if (nutrition.fastingHours) {
+      badges.push({
+        text: `⏳ 공복 ${nutrition.fastingHours} 달성 🔥`,
+        bg: 'rgba(234, 88, 12, 0.92)',
+        color: '#ffffff',
+        border: 'rgba(255, 255, 255, 0.4)',
+      });
+    }
+
+    if (humorTopBadge) {
+      badges.push({
+        text: humorTopBadge,
+        bg: 'rgba(18, 18, 20, 0.9)',
+        color: '#facc15',
+        border: 'rgba(250, 204, 21, 0.5)',
+      });
+    }
+
+    if (badges.length === 0) return;
+
+    ctx.save();
+    let currentY = 56;
+    badges.forEach((b) => {
+      ctx.font = '700 24px "Noto Sans KR", sans-serif';
+      const textMetrics = ctx.measureText(b.text);
+      const badgeW = textMetrics.width + 56;
+      const badgeH = 56;
+      const badgeX = (width - badgeW) / 2;
+
+      // 그림자
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+      ctx.shadowBlur = 16;
+      ctx.shadowOffsetY = 6;
+
+      ctx.fillStyle = b.bg;
+      ctx.beginPath();
+      ctx.roundRect(badgeX, currentY, badgeW, badgeH, 28);
+      ctx.fill();
+
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetY = 0;
+
+      ctx.strokeStyle = b.border;
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      ctx.fillStyle = b.color;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(b.text, width / 2, currentY + badgeH / 2 + 1);
+
+      currentY += badgeH + 16;
+    });
     ctx.restore();
   };
 
