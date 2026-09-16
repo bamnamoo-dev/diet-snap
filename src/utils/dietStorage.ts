@@ -1,4 +1,4 @@
-import { NutritionItem, PortionModifier, StampTemplate, AspectRatio } from '../types/diet';
+import { NutritionItem, PortionModifier, StampTemplate, AspectRatio, PhotoTransform } from '../types/diet';
 
 export interface SavedDietRecord {
   id: string;
@@ -11,6 +11,7 @@ export interface SavedDietRecord {
   portion: PortionModifier;
   template: StampTemplate;
   aspectRatio: AspectRatio;
+  photoTransform?: PhotoTransform; // 줌 확대/이동(자르기) 구도 설정 저장
 }
 
 const DB_NAME = 'DietSnapDB';

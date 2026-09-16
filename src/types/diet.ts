@@ -33,3 +33,9 @@ export interface PortionModifier {
 export type StampTemplate = 'receipt' | 'polaroid' | 'pink_receipt' | 'vintage_ticket';
 export type AspectRatio = '9:16' | '1:1';
 
+export interface PhotoTransform {
+  zoom: number;    // 확대 배율 (1.0 ~ 3.0)
+  offsetX: number; // 좌우 이동 픽셀
+  offsetY: number; // 상하 이동 픽셀
+}
+

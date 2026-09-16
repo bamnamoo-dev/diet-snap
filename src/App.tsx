@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { NutritionItem, PortionModifier, StampTemplate, AspectRatio } from './types/diet';
+import { NutritionItem, PortionModifier, StampTemplate, AspectRatio, PhotoTransform } from './types/diet';
 import { compressImage, CompressionResult } from './utils/compressImage';
 import { StampCanvas } from './components/StampCanvas';
 import { PortionChips } from './components/PortionChips';
@@ -159,7 +159,11 @@ export const App: React.FC = () => {
 
   const [template, setTemplate] = useState<StampTemplate>('receipt');
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>('9:16');
-  const [photoOffsetY, setPhotoOffsetY] = useState<number>(0);
+  const [photoTransform, setPhotoTransform] = useState<PhotoTransform>({
+    zoom: 1.0,
+    offsetX: 0,
+    offsetY: 0,
+  });
   const [isEditNutritionOpen, setIsEditNutritionOpen] = useState<boolean>(false);
   
   // 👑 Pro 구독 상태 및 일일 잔여 횟수 관리
@@ -328,6 +332,8 @@ export const App: React.FC = () => {
       const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
       const dateKey = now.toISOString().slice(0, 10);
       const newId = `diet_${now.getTime()}`;
+      const initialTransform: PhotoTransform = { zoom: 1.0, offsetX: 0, offsetY: 0 };
+      setPhotoTransform(initialTransform);
 
       const newRecord: SavedDietRecord = {
         id: newId,
@@ -340,6 +346,7 @@ export const App: React.FC = () => {
         portion: initialPortion,
         template,
         aspectRatio,
+        photoTransform: initialTransform,
       };
 
       await saveDietRecord(newRecord);
@@ -360,18 +367,20 @@ export const App: React.FC = () => {
     setImageSrc(preset.img);
     setNutrition(preset.data);
     setPortion({ scale: 1.0, excludeSoup: false });
+    setPhotoTransform({ zoom: 1.0, offsetX: 0, offsetY: 0 });
     setCompressStats(null);
     setCurrentRecordId(null);
     changeView('editor');
   };
 
-  // 3. 갤러리에서 특정 식단 선택하여 에디터로 불러오기
+  // 3. 갤러리에서 특정 식단 선택하여 에디터로 불러오기 (기존 확대/자르기 구도 100% 복원)
   const handleSelectRecordFromGallery = (record: SavedDietRecord) => {
     setImageSrc(record.imageSrc);
     setNutrition(record.nutrition);
     setPortion(record.portion);
     if (record.template) setTemplate(record.template);
     if (record.aspectRatio) setAspectRatio(record.aspectRatio);
+    setPhotoTransform(record.photoTransform || { zoom: 1.0, offsetX: 0, offsetY: 0 });
     setCurrentRecordId(record.id);
     changeView('editor');
   };
@@ -409,6 +418,20 @@ export const App: React.FC = () => {
       const target = records.find((r) => r.id === currentRecordId);
       if (target) {
         saveDietRecord({ ...target, nutrition: updatedNutrition }).catch(() => {});
+      }
+    }
+  };
+
+  // 7. 확대/자르기(이동) 구도 변경 시 현재 레코드도 IndexedDB에 자동 동기화
+  const handleTransformChange = (updatedTransform: PhotoTransform) => {
+    setPhotoTransform(updatedTransform);
+    if (currentRecordId) {
+      setRecords((prev) =>
+        prev.map((r) => (r.id === currentRecordId ? { ...r, photoTransform: updatedTransform } : r))
+      );
+      const target = records.find((r) => r.id === currentRecordId);
+      if (target) {
+        saveDietRecord({ ...target, photoTransform: updatedTransform }).catch(() => {});
       }
     }
   };
@@ -620,8 +643,8 @@ export const App: React.FC = () => {
                 template={template}
                 aspectRatio={aspectRatio}
                 isPro={isPro}
-                offsetY={photoOffsetY}
-                onOffsetChange={setPhotoOffsetY}
+                transform={photoTransform}
+                onTransformChange={handleTransformChange}
                 onCanvasReady={(canvas) => {
                   canvasElementRef.current = canvas;
                 }}

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { NutritionItem, PortionModifier, StampTemplate, AspectRatio } from '../types/diet';
+import { NutritionItem, PortionModifier, StampTemplate, AspectRatio, PhotoTransform } from '../types/diet';
+import { ZoomIn, ZoomOut, RotateCcw, Move } from 'lucide-react';
 
 interface StampCanvasProps {
   imageSrc: string | null;
@@ -10,6 +11,8 @@ interface StampCanvasProps {
   isPro?: boolean;
   offsetY?: number;
   onOffsetChange?: (offsetY: number) => void;
+  transform?: PhotoTransform;
+  onTransformChange?: (transform: PhotoTransform) => void;
   onCanvasReady?: (canvas: HTMLCanvasElement) => void;
 }
 
@@ -22,12 +25,24 @@ export const StampCanvas: React.FC<StampCanvasProps> = ({
   isPro = false,
   offsetY = 0,
   onOffsetChange,
+  transform,
+  onTransformChange,
   onCanvasReady,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  
+  // 줌 & 이동 상태 (transform prop 우선, 없으면 로컬/offsetY 연동)
+  const currentZoom = transform?.zoom ?? 1.0;
+  const currentOffsetX = transform?.offsetX ?? 0;
+  const currentOffsetY = transform?.offsetY ?? offsetY ?? 0;
+
   const isDraggingRef = useRef(false);
+  const dragStartXRef = useRef(0);
   const dragStartYRef = useRef(0);
-  const initialOffsetRef = useRef(offsetY);
+  const initialOffsetXRef = useRef(currentOffsetX);
+  const initialOffsetYRef = useRef(currentOffsetY);
+  const initialPinchDistRef = useRef<number | null>(null);
+  const initialZoomRef = useRef(currentZoom);
 
   // 보정된 수치 계산
   const soupMultiplier = portion.excludeSoup ? 0.85 : 1.0;
@@ -116,43 +131,51 @@ export const StampCanvas: React.FC<StampCanvasProps> = ({
         let renderH = drawH;
 
         if (template === 'polaroid') {
-          // 폴라로이드 프레임 내 안착
+          // 폴라로이드 프레임 내 안착 및 자르기(Clip)
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(drawX, drawY, drawW, drawH);
+          ctx.clip(); // 폴라로이드 화이트 액자 밖으로 나가지 않도록 완벽 크롭
+
+          const centerX = drawX + drawW / 2;
+          const centerY = drawY + drawH / 2;
+
+          let baseScale = 1.0;
           if (isLandscape) {
-            const scale = drawW / imgW;
-            renderW = drawW;
-            renderH = imgH * scale;
-            renderX = drawX;
-            renderY = drawY + (drawH - renderH) / 2 + offsetY;
+            baseScale = drawW / imgW;
           } else {
-            const scale = Math.min(drawW / imgW, drawH / imgH);
-            renderW = imgW * scale;
-            renderH = imgH * scale;
-            renderX = drawX + (drawW - renderW) / 2;
-            renderY = drawY + (drawH - renderH) / 2 + offsetY;
+            baseScale = Math.min(drawW / imgW, drawH / imgH);
           }
+
+          renderW = imgW * baseScale * currentZoom;
+          renderH = imgH * baseScale * currentZoom;
+          renderX = centerX - renderW / 2 + currentOffsetX;
+          renderY = centerY - renderH / 2 + currentOffsetY;
+
+          ctx.drawImage(imgElement, renderX, renderY, renderW, renderH);
+          ctx.restore();
         } else {
           // 영수증/티켓 템플릿: 하단 영수증을 피하여 상단 맑은 공간(Safe Stage)에 음식이 쏙 안착하도록 자동 상향 렌더링!
           const receiptOccupiedH = aspectRatio === '9:16' ? 700 : 450;
           const stageH = targetHeight - receiptOccupiedH;
-          const stageCenterY = stageH / 2;
+          const centerX = targetWidth / 2;
+          const centerY = stageH / 2;
 
+          let baseScale = 1.0;
           if (isLandscape) {
-            const scale = drawW / imgW;
-            renderW = drawW;
-            renderH = imgH * scale;
-            renderX = drawX;
-            renderY = stageCenterY - renderH / 2 + offsetY;
+            baseScale = drawW / imgW;
           } else {
             // 세로 사진도 영수증 윗 공간을 꽉 채우며 돋보이도록 스케일링
-            const scale = Math.max(drawW / imgW, stageH / imgH);
-            renderW = imgW * scale;
-            renderH = imgH * scale;
-            renderX = drawX + (drawW - renderW) / 2;
-            renderY = stageCenterY - renderH / 2 + offsetY;
+            baseScale = Math.max(drawW / imgW, stageH / imgH);
           }
-        }
 
-        ctx.drawImage(imgElement, renderX, renderY, renderW, renderH);
+          renderW = imgW * baseScale * currentZoom;
+          renderH = imgH * baseScale * currentZoom;
+          renderX = centerX - renderW / 2 + currentOffsetX;
+          renderY = centerY - renderH / 2 + currentOffsetY;
+
+          ctx.drawImage(imgElement, renderX, renderY, renderW, renderH);
+        }
 
         // 사진 위 그라디언트 비네팅 (폴라로이드 제외)
         if (template !== 'polaroid') {
@@ -221,6 +244,9 @@ export const StampCanvas: React.FC<StampCanvasProps> = ({
     mealLabel,
     dDayLabel,
     offsetY,
+    currentZoom,
+    currentOffsetX,
+    currentOffsetY,
   ]);
 
   /**
@@ -754,44 +780,105 @@ export const StampCanvas: React.FC<StampCanvasProps> = ({
     ctx.restore();
   };
 
+  const updateTransform = (partial: Partial<PhotoTransform>) => {
+    const next: PhotoTransform = {
+      zoom: partial.zoom !== undefined ? partial.zoom : currentZoom,
+      offsetX: partial.offsetX !== undefined ? partial.offsetX : currentOffsetX,
+      offsetY: partial.offsetY !== undefined ? partial.offsetY : currentOffsetY,
+    };
+    if (onTransformChange) {
+      onTransformChange(next);
+    } else if (onOffsetChange && partial.offsetY !== undefined) {
+      onOffsetChange(partial.offsetY);
+    }
+  };
+
+  const handleZoomIn = () => {
+    const newZoom = Math.min(3.0, Math.round((currentZoom + 0.15) * 100) / 100);
+    updateTransform({ zoom: newZoom });
+  };
+
+  const handleZoomOut = () => {
+    const newZoom = Math.max(1.0, Math.round((currentZoom - 0.15) * 100) / 100);
+    updateTransform({ zoom: newZoom });
+  };
+
+  const handleResetTransform = () => {
+    updateTransform({ zoom: 1.0, offsetX: 0, offsetY: 0 });
+  };
+
   const handleTouchStart = (e: React.TouchEvent) => {
-    isDraggingRef.current = true;
-    dragStartYRef.current = e.touches[0].clientY;
-    initialOffsetRef.current = offsetY;
+    if (e.touches.length === 1) {
+      isDraggingRef.current = true;
+      dragStartXRef.current = e.touches[0].clientX;
+      dragStartYRef.current = e.touches[0].clientY;
+      initialOffsetXRef.current = currentOffsetX;
+      initialOffsetYRef.current = currentOffsetY;
+      initialPinchDistRef.current = null;
+    } else if (e.touches.length === 2) {
+      isDraggingRef.current = false;
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      initialPinchDistRef.current = dist;
+      initialZoomRef.current = currentZoom;
+    }
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDraggingRef.current || !onOffsetChange) return;
-    const deltaY = e.touches[0].clientY - dragStartYRef.current;
-    // 캔버스 레티나 스케일(1080x1920)에 맞추어 변환 (약 2.5배)
-    const newOffset = Math.max(-500, Math.min(350, initialOffsetRef.current + deltaY * 2.5));
-    onOffsetChange(newOffset);
+    if (e.touches.length === 1 && isDraggingRef.current) {
+      const deltaX = e.touches[0].clientX - dragStartXRef.current;
+      const deltaY = e.touches[0].clientY - dragStartYRef.current;
+      const newOffsetX = Math.max(-500, Math.min(500, initialOffsetXRef.current + deltaX * 2.2));
+      const newOffsetY = Math.max(-600, Math.min(400, initialOffsetYRef.current + deltaY * 2.2));
+      updateTransform({ offsetX: newOffsetX, offsetY: newOffsetY });
+    } else if (e.touches.length === 2 && initialPinchDistRef.current !== null) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const ratio = dist / initialPinchDistRef.current;
+      const newZoom = Math.max(1.0, Math.min(3.0, Math.round(initialZoomRef.current * ratio * 100) / 100));
+      updateTransform({ zoom: newZoom });
+    }
   };
 
   const handleTouchEnd = () => {
     isDraggingRef.current = false;
+    initialPinchDistRef.current = null;
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
     isDraggingRef.current = true;
+    dragStartXRef.current = e.clientX;
     dragStartYRef.current = e.clientY;
-    initialOffsetRef.current = offsetY;
+    initialOffsetXRef.current = currentOffsetX;
+    initialOffsetYRef.current = currentOffsetY;
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDraggingRef.current || !onOffsetChange) return;
+    if (!isDraggingRef.current) return;
+    const deltaX = e.clientX - dragStartXRef.current;
     const deltaY = e.clientY - dragStartYRef.current;
-    const newOffset = Math.max(-500, Math.min(350, initialOffsetRef.current + deltaY * 2.5));
-    onOffsetChange(newOffset);
+    const newOffsetX = Math.max(-500, Math.min(500, initialOffsetXRef.current + deltaX * 2.2));
+    const newOffsetY = Math.max(-600, Math.min(400, initialOffsetYRef.current + deltaY * 2.2));
+    updateTransform({ offsetX: newOffsetX, offsetY: newOffsetY });
   };
 
   const handleMouseUp = () => {
     isDraggingRef.current = false;
   };
 
+  const handleWheel = (e: React.WheelEvent) => {
+    const zoomDelta = e.deltaY < 0 ? 0.1 : -0.1;
+    const newZoom = Math.max(1.0, Math.min(3.0, Math.round((currentZoom + zoomDelta) * 100) / 100));
+    updateTransform({ zoom: newZoom });
+  };
+
   return (
     <div 
-      className="relative w-full max-w-[420px] mx-auto rounded-3xl overflow-hidden shadow-2xl bg-neutral-900 border border-neutral-800/80 cursor-ns-resize select-none touch-none"
+      className="relative w-full max-w-[420px] mx-auto rounded-3xl overflow-hidden shadow-2xl bg-neutral-900 border border-neutral-800/80 cursor-grab active:cursor-grabbing select-none touch-none group"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -799,6 +886,7 @@ export const StampCanvas: React.FC<StampCanvasProps> = ({
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
+      onWheel={handleWheel}
     >
       <canvas
         ref={canvasRef}
@@ -808,9 +896,54 @@ export const StampCanvas: React.FC<StampCanvasProps> = ({
         }}
       />
 
-      {/* 상하 구도 조절 플로팅 힌트 뱃지 */}
-      <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-sm border border-white/10 px-2.5 py-1 rounded-full text-[10px] text-white/80 font-medium flex items-center gap-1 shadow-sm pointer-events-none">
-        <span>↕️ 사진을 위아래로 밀어 구도 조절</span>
+      {/* 좌상단: 드래그 구도 조절 안내 */}
+      <div className="absolute top-2.5 left-2.5 bg-black/60 backdrop-blur-md border border-white/15 px-2.5 py-1 rounded-full text-[10px] text-white/90 font-medium flex items-center gap-1 shadow-sm pointer-events-none">
+        <Move className="w-2.5 h-2.5 text-rose-400 shrink-0" />
+        <span>드래그로 자르기/이동</span>
+      </div>
+
+      {/* 우상단: 감성 퀵 줌 컨트롤 툴바 */}
+      <div className="absolute top-2.5 right-2.5 bg-neutral-950/80 backdrop-blur-md border border-white/15 px-1.5 py-1 rounded-full flex items-center gap-1 shadow-xl z-20">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handleZoomOut();
+          }}
+          disabled={currentZoom <= 1.0}
+          className="w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-30 flex items-center justify-center text-white transition active:scale-90"
+          title="축소"
+        >
+          <ZoomOut className="w-3 h-3" />
+        </button>
+
+        <span className="text-[10px] font-mono font-bold text-amber-300 px-0.5 min-w-[28px] text-center">
+          {currentZoom.toFixed(1)}x
+        </span>
+
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handleZoomIn();
+          }}
+          disabled={currentZoom >= 3.0}
+          className="w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-30 flex items-center justify-center text-white transition active:scale-90"
+          title="확대"
+        >
+          <ZoomIn className="w-3 h-3" />
+        </button>
+
+        {(currentZoom > 1.0 || currentOffsetX !== 0 || currentOffsetY !== 0) && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleResetTransform();
+            }}
+            className="w-6 h-6 rounded-full bg-rose-500/30 hover:bg-rose-500/50 text-rose-200 border border-rose-400/40 flex items-center justify-center transition active:scale-90 ml-0.5"
+            title="기본 구도로 초기화"
+          >
+            <RotateCcw className="w-2.5 h-2.5" />
+          </button>
+        )}
       </div>
     </div>
   );
