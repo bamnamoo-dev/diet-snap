@@ -16,11 +16,17 @@ export interface NutritionItem {
   custom_chips?: CustomChip[]; // 음식 종류별 AI 맞춤 연동형 1초 보정 칩 (최대 3~4개)
 }
 
+export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'cheating';
+export type HumorMode = 'none' | 'zero_cal' | 'cheating' | 'cardio';
+
 export interface PortionModifier {
   scale: number;        // 소(0.8), 보통(1.0), 곱빼기(1.3)
   excludeSoup: boolean; // 국물 제외 여부 (-15% 칼로리/나트륨)
   activeLabel?: string; // 현재 선택된 칩 라벨 (예: "초등 급식", "성인 식판", "시럽 뺌")
+  mealType?: MealType;  // 아침, 점심, 저녁, 간식, 치팅
+  humorMode?: HumorMode; // 유머 스탬프 모드 ('none', 'zero_cal', 'cheating', 'cardio')
+  dDay?: number;        // Day N (디데이)
 }
 
-export type StampTemplate = 'receipt' | 'polaroid';
+export type StampTemplate = 'receipt' | 'polaroid' | 'pink_receipt' | 'vintage_ticket';
 export type AspectRatio = '9:16' | '1:1';

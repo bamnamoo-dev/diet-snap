@@ -65,9 +65,9 @@ export const IntroView: React.FC<IntroViewProps> = ({
         <div className="w-full flex items-center justify-between text-[11px] font-mono text-neutral-400/80 z-10 px-1">
           <span className="flex items-center gap-1.5 font-semibold text-rose-400">
             <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-            AI CAM ACTIVE
+            TODAY'S DIET LOG
           </span>
-          <span className="tracking-wider text-neutral-500">1080×1920 HDR</span>
+          <span className="tracking-wider text-neutral-400 font-semibold">O-SIK-WAN ARCHIVE</span>
         </div>
 
         {/* 중앙 감성 셔터 렌즈 비주얼 */}

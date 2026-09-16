@@ -423,7 +423,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0d0e12] text-neutral-100 flex flex-col items-center justify-start pb-24 font-sans">
+    <div className="min-h-screen bg-[#111215] text-neutral-100 flex flex-col items-center justify-start pb-24 font-sans">
       {/* 1) 카메라 즉시 촬영 전용 숨김 인풋 (capture="environment") */}
       <input
         ref={cameraInputRef}
@@ -444,7 +444,7 @@ export const App: React.FC = () => {
       />
 
       {/* 상단 네비게이션 헤더 */}
-      <header className="w-full max-w-md px-4 py-3 border-b border-neutral-800/80 sticky top-0 bg-[#0d0e12]/90 backdrop-blur-md z-30 flex items-center justify-between">
+      <header className="w-full max-w-md px-4 py-3 border-b border-neutral-800/80 sticky top-0 bg-[#111215]/90 backdrop-blur-md z-30 flex items-center justify-between">
         <div className="flex items-center gap-2">
           {/* 상황별 뒤로가기 버튼 */}
           {currentView === 'editor' ? (
@@ -548,26 +548,14 @@ export const App: React.FC = () => {
       ) : (
         /* 3. 에디터 화면 (스탬프 캔버스 & 1초 보정 칩 & 공유/저장) */
         <main className="w-full max-w-md px-4 pt-4 flex flex-col items-center gap-4">
-          {/* 압축 통계 뱃지 */}
-          {compressStats && (
-            <div className="w-full bg-emerald-950/40 border border-emerald-800/50 rounded-xl px-3 py-2 flex items-center justify-between text-xs text-emerald-300">
-              <span className="flex items-center gap-1.5 font-medium">
-                <Zap className="w-3.5 h-3.5 text-emerald-400" /> 초고속 이미지 최적화 완료
-              </span>
-              <span className="font-mono text-neutral-300">
-                {compressStats.originalSizeKB}KB ➔ <b className="text-emerald-400">{compressStats.compressedSizeKB}KB</b> (-{Math.round((1 - compressStats.compressedSizeKB / compressStats.originalSizeKB) * 100)}%)
-              </span>
-            </div>
-          )}
-
           {/* 빠른 테스트용 프리셋 칩 */}
           <div className="w-full flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-            <span className="text-[11px] text-neutral-500 font-medium shrink-0">다른 예시:</span>
+            <span className="text-[11px] text-neutral-400 font-semibold shrink-0">추천 식단:</span>
             {SAMPLE_PRESETS.map((preset) => (
               <button
                 key={preset.name}
                 onClick={() => handleSelectPreset(preset)}
-                className="text-xs px-2.5 py-1 rounded-lg bg-neutral-900 border border-neutral-800 hover:border-neutral-600 text-neutral-300 shrink-0 transition active:scale-95"
+                className="text-xs px-2.5 py-1 rounded-xl bg-neutral-900 border border-neutral-800 hover:border-neutral-600 text-neutral-300 shrink-0 transition active:scale-95 font-medium"
               >
                 {preset.name}
               </button>
@@ -576,7 +564,7 @@ export const App: React.FC = () => {
 
           {/* 알림 토스트 */}
           {statusMessage && !isAnalyzing && (
-            <div className="w-full bg-emerald-950/60 border border-emerald-500/50 rounded-xl px-3 py-2.5 text-xs text-emerald-300 font-semibold flex items-center justify-center gap-2 shadow-lg">
+            <div className="w-full bg-emerald-950/60 border border-emerald-500/50 rounded-2xl px-3.5 py-2.5 text-xs text-emerald-300 font-bold flex items-center justify-center gap-2 shadow-lg">
               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
               {statusMessage}
             </div>
@@ -585,14 +573,14 @@ export const App: React.FC = () => {
           {/* 캔버스 스탬프 뷰어 영역 */}
           <div className="relative w-full">
             {isAnalyzing && (
-              <div className="absolute inset-0 z-20 bg-neutral-950/75 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center gap-3">
-                <RefreshCw className="w-8 h-8 text-rose-400 animate-spin" />
+              <div className="absolute inset-0 z-20 bg-neutral-950/80 backdrop-blur-md rounded-3xl flex flex-col items-center justify-center gap-3">
+                <RefreshCw className="w-9 h-9 text-rose-400 animate-spin" />
                 <div className="text-center px-4">
-                  <p className="text-sm font-bold text-white">
+                  <p className="text-sm font-extrabold text-white">
                     {statusMessage || 'AI 분석 중...'}
                   </p>
-                  <p className="text-xs text-neutral-400 pt-1">
-                    1.5초 만에 칼로리 & 탄단지 명세서 발행 중
+                  <p className="text-xs text-rose-300/80 pt-1 font-medium">
+                    1.2초 만에 성수동 감성 영수증 발행 중 ✨
                   </p>
                 </div>
               </div>
@@ -621,6 +609,7 @@ export const App: React.FC = () => {
             onTemplateChange={setTemplate}
             aspectRatio={aspectRatio}
             onAspectRatioChange={setAspectRatio}
+            isPro={isPro}
           />
 
           {/* 에러 발생 시 안내 배너 */}
