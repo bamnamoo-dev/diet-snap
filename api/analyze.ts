@@ -1,5 +1,7 @@
 // Vercel Serverless Function: /api/analyze
 
+declare const process: { env: { [key: string]: string | undefined } };
+
 export const config = {
   runtime: 'edge',
 };
