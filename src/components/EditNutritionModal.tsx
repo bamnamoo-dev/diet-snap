@@ -1,37 +1,52 @@
 import React, { useState, useEffect } from 'react';
-import { NutritionItem } from '../types/diet';
-import { X, Check, Flame } from 'lucide-react';
+import { NutritionItem, MealType } from '../types/diet';
+import { X, Check, Flame, Utensils } from 'lucide-react';
 
 interface EditNutritionModalProps {
   isOpen: boolean;
   onClose: () => void;
   nutrition: NutritionItem;
-  onSave: (updated: NutritionItem) => void;
+  mealType?: MealType;
+  onSave: (updated: NutritionItem, updatedMealType?: MealType) => void;
 }
+
+const MEAL_OPTIONS: { id: MealType; label: string; icon: string }[] = [
+  { id: 'breakfast', label: '아침', icon: '🌅' },
+  { id: 'lunch', label: '점심', icon: '☀️' },
+  { id: 'dinner', label: '저녁', icon: '🌙' },
+  { id: 'snack', label: '간식', icon: '🍪' },
+  { id: 'cheating', label: '치팅', icon: '🍕' },
+];
 
 export const EditNutritionModal: React.FC<EditNutritionModalProps> = ({
   isOpen,
   onClose,
   nutrition,
+  mealType = 'lunch',
   onSave,
 }) => {
   const [form, setForm] = useState<NutritionItem>({ ...nutrition });
+  const [selectedMeal, setSelectedMeal] = useState<MealType>(mealType);
 
   useEffect(() => {
     setForm({ ...nutrition });
-  }, [nutrition, isOpen]);
+    setSelectedMeal(mealType);
+  }, [nutrition, mealType, isOpen]);
 
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({
-      ...form,
-      calories: Number(form.calories) || 0,
-      carbs: Number(form.carbs) || 0,
-      protein: Number(form.protein) || 0,
-      fat: Number(form.fat) || 0,
-    });
+    onSave(
+      {
+        ...form,
+        calories: Number(form.calories) || 0,
+        carbs: Number(form.carbs) || 0,
+        protein: Number(form.protein) || 0,
+        fat: Number(form.fat) || 0,
+      },
+      selectedMeal
+    );
     onClose();
   };
 
@@ -56,6 +71,31 @@ export const EditNutritionModal: React.FC<EditNutritionModalProps> = ({
 
         {/* 폼 입력창 */}
         <form onSubmit={handleSubmit} className="space-y-3.5">
+          {/* 🍽️ 끼니 분류 선택 (아침, 점심, 저녁, 간식, 치팅) */}
+          <div>
+            <label className="text-xs font-semibold text-neutral-400 block mb-1.5 flex items-center gap-1">
+              <Utensils className="w-3.5 h-3.5 text-rose-400" />
+              <span>끼니 분류</span>
+            </label>
+            <div className="grid grid-cols-5 gap-1.5">
+              {MEAL_OPTIONS.map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => setSelectedMeal(opt.id)}
+                  className={`py-2 px-1 rounded-xl text-xs font-bold transition flex flex-col items-center justify-center gap-0.5 border ${
+                    selectedMeal === opt.id
+                      ? 'bg-gradient-to-tr from-rose-500 to-amber-500 text-white border-rose-400 shadow-md shadow-rose-500/25 scale-[1.02]'
+                      : 'bg-neutral-900 border-neutral-750 text-neutral-400 hover:text-neutral-200 hover:border-neutral-600'
+                  }`}
+                >
+                  <span className="text-sm">{opt.icon}</span>
+                  <span className="text-[11px]">{opt.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div>
             <label className="text-xs font-semibold text-neutral-400 block mb-1">메뉴명</label>
             <input

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { NutritionItem, PortionModifier, StampTemplate, AspectRatio, PhotoTransform } from './types/diet';
+import { NutritionItem, PortionModifier, StampTemplate, AspectRatio, PhotoTransform, MealType } from './types/diet';
 import { compressImage, CompressionResult } from './utils/compressImage';
 import { StampCanvas } from './components/StampCanvas';
 import { PortionChips } from './components/PortionChips';
@@ -683,21 +683,47 @@ export const App: React.FC = () => {
               ))}
             </div>
 
-            {/* 2단: 1초 양 보정 & 인스타 방어 모드 & 수치 수정 모달 (한 줄 콤팩트 바) */}
+            {/* 2단: 끼니 분류 (아침/점심/저녁/간식) & 1초 양 보정 & 수치/끼니 직접 수정 (한 줄 콤팩트 바) */}
             <div className="flex items-center justify-between gap-1.5 px-0.5">
-              {/* 끼니/유머 퀵 토글 */}
+              {/* 끼니 & 양 보정 퀵 칩 스크롤러 */}
               <div className="flex items-center gap-1 overflow-x-auto no-scrollbar flex-1">
-                {['none', 'zero_cal', 'cheating'].map((mode) => (
+                {/* 끼니 4종 원터치 토글 */}
+                {[
+                  { id: 'breakfast' as MealType, label: '아침 🌅' },
+                  { id: 'lunch' as MealType, label: '점심 ☀️' },
+                  { id: 'dinner' as MealType, label: '저녁 🌙' },
+                  { id: 'snack' as MealType, label: '간식 🍪' },
+                ].map((m) => (
+                  <button
+                    key={m.id}
+                    onClick={() => handlePortionChange({ ...portion, mealType: m.id })}
+                    className={`py-1 px-2 rounded-lg text-[10px] font-bold whitespace-nowrap border transition active:scale-95 ${
+                      (portion.mealType || 'lunch') === m.id
+                        ? 'bg-rose-500 text-white border-rose-400 shadow-sm'
+                        : 'bg-neutral-900 text-neutral-400 border-neutral-800 hover:text-neutral-200'
+                    }`}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+
+                <span className="w-px h-3.5 bg-neutral-800 shrink-0 mx-0.5" />
+
+                {/* 끼니/유머 퀵 토글 */}
+                {['zero_cal', 'cheating'].map((mode) => (
                   <button
                     key={mode}
-                    onClick={() => handlePortionChange({ ...portion, humorMode: mode as any })}
-                    className={`py-1 px-2 rounded-lg text-[10px] font-bold whitespace-nowrap border transition ${
-                      (portion.humorMode ?? 'none') === mode
+                    onClick={() => handlePortionChange({ 
+                      ...portion, 
+                      humorMode: (portion.humorMode === mode ? 'none' : mode) as any 
+                    })}
+                    className={`py-1 px-2 rounded-lg text-[10px] font-bold whitespace-nowrap border transition active:scale-95 ${
+                      portion.humorMode === mode
                         ? 'bg-amber-400 text-neutral-950 border-amber-300 shadow-sm'
                         : 'bg-neutral-900 text-neutral-400 border-neutral-800'
                     }`}
                   >
-                    {mode === 'none' ? '정상수치' : mode === 'zero_cal' ? '0 kcal 🤫' : '치팅데이 🍕'}
+                    {mode === 'zero_cal' ? '0 kcal 🤫' : '치팅 🍕'}
                   </button>
                 ))}
 
@@ -705,12 +731,12 @@ export const App: React.FC = () => {
                 {[
                   { label: '소식 (0.8x)', scale: 0.8 },
                   { label: '보통 (1.0x)', scale: 1.0 },
-                  { label: '곱빼기 (1.25x)', scale: 1.25 },
+                  { label: '곱 (1.25x)', scale: 1.25 },
                 ].map((p) => (
                   <button
                     key={p.label}
                     onClick={() => handlePortionChange({ ...portion, scale: p.scale, activeLabel: p.label })}
-                    className={`py-1 px-2 rounded-lg text-[10px] font-bold whitespace-nowrap border transition ${
+                    className={`py-1 px-2 rounded-lg text-[10px] font-bold whitespace-nowrap border transition active:scale-95 ${
                       portion.scale === p.scale
                         ? 'bg-neutral-200 text-neutral-950 border-white shadow-sm'
                         : 'bg-neutral-900 text-neutral-400 border-neutral-800'
@@ -721,12 +747,12 @@ export const App: React.FC = () => {
                 ))}
               </div>
 
-              {/* 수치 직접 수정 버튼 */}
+              {/* 수치 및 끼니 수정 모달 버튼 */}
               <button
                 onClick={() => setIsEditNutritionOpen(true)}
-                className="py-1 px-2.5 rounded-lg bg-neutral-850 hover:bg-neutral-800 text-neutral-300 text-[10px] font-bold border border-neutral-750 whitespace-nowrap shrink-0 flex items-center gap-1 active:scale-95 transition"
+                className="py-1 px-2.5 rounded-lg bg-neutral-850 hover:bg-neutral-800 text-neutral-300 text-[10px] font-bold border border-neutral-750 whitespace-nowrap shrink-0 flex items-center gap-1 active:scale-95 transition shadow-sm"
               >
-                <span>수치수정</span>
+                <span>수치/끼니수정</span>
               </button>
             </div>
 
@@ -770,13 +796,17 @@ export const App: React.FC = () => {
         }}
       />
 
-      {/* ✏️ 수치 직접 수정 모달 */}
+      {/* ✏️ 수치 및 끼니(아침/점심/저녁/간식) 직접 수정 모달 */}
       <EditNutritionModal
         isOpen={isEditNutritionOpen}
         onClose={() => setIsEditNutritionOpen(false)}
         nutrition={nutrition}
-        onSave={(updated) => {
-          handleNutritionChange(updated);
+        mealType={portion.mealType || 'lunch'}
+        onSave={(updatedNutrition, updatedMealType) => {
+          handleNutritionChange(updatedNutrition);
+          if (updatedMealType) {
+            handlePortionChange({ ...portion, mealType: updatedMealType });
+          }
           setIsEditNutritionOpen(false);
         }}
       />
