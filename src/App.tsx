@@ -639,10 +639,10 @@ export const App: React.FC = () => {
               <div className="absolute inset-0 z-20 bg-neutral-950/80 backdrop-blur-md rounded-3xl flex flex-col items-center justify-center gap-3">
                 <RefreshCw className="w-9 h-9 text-rose-400 animate-spin" />
                 <div className="text-center px-4">
-                  <p className="text-sm font-bold text-white tracking-tight animate-pulse">
+                  <p className="text-sm font-bold text-white tracking-tight animate-pulse break-keep">
                     {statusMessage || 'AI 식단 정밀 분석 중...'}
                   </p>
-                  <p className="text-xs text-neutral-400 pt-1">
+                  <p className="text-xs text-neutral-400 pt-1 break-keep">
                     양념, 토핑, 중량을 실시간 추정하고 있습니다
                   </p>
                 </div>

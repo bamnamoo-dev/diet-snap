@@ -700,12 +700,12 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
         <div className="absolute bottom-0 left-0 w-24 h-24 bg-rose-500/10 rounded-full blur-xl pointer-events-none" />
 
         <div className="flex items-center justify-between pb-3 border-b border-neutral-800/80">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-xs font-bold text-neutral-200">오늘의 오식완 요약</span>
+          <div className="flex items-center gap-2 whitespace-nowrap">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+            <span className="text-xs font-bold text-neutral-200 whitespace-nowrap">오늘의 오식완 요약</span>
           </div>
-          <span className="text-[11px] font-mono text-neutral-400 flex items-center gap-1">
-            <Calendar className="w-3 h-3 text-neutral-500" />
+          <span className="text-[11px] font-mono text-neutral-400 flex items-center gap-1 whitespace-nowrap shrink-0">
+            <Calendar className="w-3 h-3 text-neutral-500 shrink-0" />
             {todayKey}
           </span>
         </div>
@@ -713,32 +713,32 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
         {/* 오늘 통계 지표 */}
         <div className="grid grid-cols-4 gap-2 pt-3 text-center">
           <div className="flex flex-col items-center bg-neutral-950/60 rounded-xl p-2 border border-neutral-800/50">
-            <span className="text-[10px] text-neutral-400">기록</span>
-            <span className="text-base font-black text-white">{todayRecords.length}<span className="text-[10px] font-normal text-neutral-500">끼</span></span>
+            <span className="text-[10px] text-neutral-400 whitespace-nowrap">기록</span>
+            <span className="text-base font-black text-white whitespace-nowrap">{todayRecords.length}<span className="text-[10px] font-normal text-neutral-500">끼</span></span>
           </div>
 
           <div className="flex flex-col items-center bg-neutral-950/60 rounded-xl p-2 border border-neutral-800/50">
-            <span className="text-[10px] text-amber-400 font-semibold flex items-center gap-0.5">
-              <Flame className="w-2.5 h-2.5" /> 칼로리
+            <span className="text-[10px] text-amber-400 font-semibold flex items-center gap-0.5 whitespace-nowrap">
+              <Flame className="w-2.5 h-2.5 shrink-0" /> 칼로리
             </span>
-            <span className="text-base font-black text-amber-300 font-mono">
+            <span className="text-base font-black text-amber-300 font-mono whitespace-nowrap">
               {todayCalories}
               <span className="text-[9px] font-normal text-neutral-500 block -mt-0.5">kcal</span>
             </span>
           </div>
 
           <div className="flex flex-col items-center bg-neutral-950/60 rounded-xl p-2 border border-neutral-800/50">
-            <span className="text-[10px] text-rose-400 font-semibold">단백질</span>
-            <span className="text-base font-black text-rose-300 font-mono">
+            <span className="text-[10px] text-rose-400 font-semibold whitespace-nowrap">단백질</span>
+            <span className="text-base font-black text-rose-300 font-mono whitespace-nowrap">
               {todayProtein}
               <span className="text-[9px] font-normal text-neutral-500 block -mt-0.5">g</span>
             </span>
           </div>
 
           <div className="flex flex-col items-center bg-neutral-950/60 rounded-xl p-2 border border-neutral-800/50">
-            <span className="text-[10px] text-sky-400 font-semibold">탄/지</span>
-            <span className="text-xs font-bold text-neutral-300 font-mono pt-1">
-              {todayCarbs} / {todayFat}g
+            <span className="text-[10px] text-sky-400 font-semibold whitespace-nowrap">탄/지</span>
+            <span className="text-xs font-bold text-neutral-300 font-mono pt-1 whitespace-nowrap">
+              {todayCarbs}/{todayFat}g
             </span>
           </div>
         </div>
@@ -747,7 +747,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
         {todayRecords.length > 0 && (
           <button
             onClick={handleGenerateDailySummary}
-            className="mt-3 w-full py-2.5 px-3 rounded-2xl bg-gradient-to-r from-rose-500 via-pink-500 to-amber-400 hover:opacity-95 text-white text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-md shadow-rose-500/20 active:scale-[0.98] transition"
+            className="mt-3 w-full py-2.5 px-3 rounded-2xl bg-gradient-to-r from-rose-500 via-pink-500 to-amber-400 hover:opacity-95 text-white text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-md shadow-rose-500/20 active:scale-[0.98] transition whitespace-nowrap"
           >
             <Layers className="w-3.5 h-3.5 text-white shrink-0" />
             <span className="whitespace-nowrap">오늘의 {todayRecords.length}끼 모아보기 영수증 발행</span>
@@ -767,7 +767,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
             <ClipboardCheck className="w-3.5 h-3.5 text-sky-400 shrink-0" />
             <span className="whitespace-nowrap">쌤 제출용 식단표</span>
             {!isPro && (
-              <span className="px-1 py-0.2 bg-amber-500/20 text-amber-300 text-[8px] font-black rounded-md flex items-center gap-0.5 border border-amber-500/30 shrink-0">
+              <span className="px-1 py-0.2 bg-amber-500/20 text-amber-300 text-[8px] font-black rounded-md flex items-center gap-0.5 border border-amber-500/30 shrink-0 whitespace-nowrap">
                 <Lock className="w-2 h-2" /> PRO
               </span>
             )}
@@ -784,7 +784,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
             <CalendarCheck className="w-3.5 h-3.5 text-purple-400 shrink-0" />
             <span className="whitespace-nowrap">주간 결산 영수증</span>
             {!isPro && (
-              <span className="px-1 py-0.2 bg-amber-500/20 text-amber-300 text-[8px] font-black rounded-md flex items-center gap-0.5 border border-amber-500/30 shrink-0">
+              <span className="px-1 py-0.2 bg-amber-500/20 text-amber-300 text-[8px] font-black rounded-md flex items-center gap-0.5 border border-amber-500/30 shrink-0 whitespace-nowrap">
                 <Lock className="w-2 h-2" /> PRO
               </span>
             )}
@@ -794,20 +794,20 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
 
       {/* 2. 갤러리 피드 헤더 & 새 촬영 버튼 */}
       <div className="w-full flex items-center justify-between pt-1 px-1">
-        <div className="flex items-center gap-1.5">
-          <Utensils className="w-4 h-4 text-rose-400" />
-          <h3 className="text-sm font-bold text-white">식단 히스토리</h3>
-          <span className="text-[11px] px-1.5 py-0.2 rounded-full bg-neutral-800 text-neutral-400 font-mono">
+        <div className="flex items-center gap-1.5 whitespace-nowrap">
+          <Utensils className="w-4 h-4 text-rose-400 shrink-0" />
+          <h3 className="text-sm font-bold text-white whitespace-nowrap">식단 히스토리</h3>
+          <span className="text-[11px] px-1.5 py-0.2 rounded-full bg-neutral-800 text-neutral-400 font-mono whitespace-nowrap">
             {records.length}개
           </span>
         </div>
 
         <button
           onClick={onNewCaptureClick}
-          className="text-xs px-3 py-1.5 rounded-xl bg-neutral-100 hover:bg-white text-neutral-950 font-bold flex items-center gap-1 shadow-md active:scale-95 transition"
+          className="text-xs px-3 py-1.5 rounded-xl bg-neutral-100 hover:bg-white text-neutral-950 font-bold flex items-center gap-1 shadow-md active:scale-95 transition whitespace-nowrap shrink-0"
         >
-          <Camera className="w-3.5 h-3.5 text-neutral-950" />
-          새 식단 촬영
+          <Camera className="w-3.5 h-3.5 text-neutral-950 shrink-0" />
+          <span className="whitespace-nowrap">새 식단 촬영</span>
         </button>
       </div>
 
@@ -818,18 +818,18 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
             <Utensils className="w-6 h-6 text-neutral-400" />
           </div>
           <div>
-            <p className="text-sm font-bold text-neutral-200">아직 저장된 식단이 없어요</p>
-            <p className="text-xs text-neutral-500 pt-1 leading-relaxed">
+            <p className="text-sm font-bold text-neutral-200 break-keep">아직 저장된 식단이 없어요</p>
+            <p className="text-xs text-neutral-500 pt-1 leading-relaxed break-keep">
               카메라로 오늘의 식단을 촬영하면<br />
               칼로리와 탄단지가 여기에 차곡차곡 기록됩니다 ✨
             </p>
           </div>
           <button
             onClick={onNewCaptureClick}
-            className="mt-2 py-2.5 px-5 rounded-xl bg-neutral-100 hover:bg-white text-neutral-950 font-bold text-xs flex items-center gap-1.5 shadow-md active:scale-95 transition"
+            className="mt-2 py-2.5 px-5 rounded-xl bg-neutral-100 hover:bg-white text-neutral-950 font-bold text-xs flex items-center gap-1.5 shadow-md active:scale-95 transition whitespace-nowrap"
           >
-            <Camera className="w-4 h-4" />
-            첫 식단 촬영하기
+            <Camera className="w-4 h-4 shrink-0" />
+            <span>첫 식단 촬영하기</span>
           </button>
         </div>
       ) : (
@@ -949,12 +949,12 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center p-4">
           <div className="relative w-full max-w-sm bg-neutral-900 border border-neutral-800 rounded-3xl p-4 flex flex-col items-center gap-3 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="w-full flex items-center justify-between pb-1 border-b border-neutral-800">
-              <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                <Layers className="w-4 h-4 text-rose-400" /> 오늘의 3끼 총결산 영수증
+              <span className="text-xs font-bold text-white flex items-center gap-1.5 whitespace-nowrap">
+                <Layers className="w-4 h-4 text-rose-400 shrink-0" /> <span className="whitespace-nowrap">오늘의 3끼 총결산 영수증</span>
               </span>
               <button
                 onClick={() => setIsDailySummaryOpen(false)}
-                className="p-1 rounded-full text-neutral-400 hover:text-white hover:bg-neutral-800"
+                className="p-1 rounded-full text-neutral-400 hover:text-white hover:bg-neutral-800 shrink-0"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -969,15 +969,15 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
             <div className="w-full space-y-2 pt-1">
               <button
                 onClick={handleShareSummary}
-                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-rose-500 via-pink-500 to-amber-400 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-rose-500/20 active:scale-95 transition"
+                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-rose-500 via-pink-500 to-amber-400 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-rose-500/20 active:scale-95 transition whitespace-nowrap"
               >
-                <Share2 className="w-4 h-4" /> 인스타 스토리 즉시 공유
+                <Share2 className="w-4 h-4 shrink-0" /> <span>인스타 스토리 즉시 공유</span>
               </button>
               <button
                 onClick={handleDownloadSummary}
-                className="w-full py-2.5 px-4 rounded-xl bg-neutral-800 hover:bg-neutral-750 text-neutral-200 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition"
+                className="w-full py-2.5 px-4 rounded-xl bg-neutral-800 hover:bg-neutral-750 text-neutral-200 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition whitespace-nowrap"
               >
-                <Download className="w-3.5 h-3.5" /> 고해상도 JPG 파일 저장
+                <Download className="w-3.5 h-3.5 shrink-0" /> <span>고해상도 JPG 파일 저장</span>
               </button>
             </div>
           </div>
@@ -989,12 +989,12 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center p-4">
           <div className="relative w-full max-w-sm bg-neutral-900 border border-neutral-800 rounded-3xl p-4 flex flex-col items-center gap-3 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="w-full flex items-center justify-between pb-1 border-b border-neutral-800">
-              <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                <ClipboardCheck className="w-4 h-4 text-sky-400" /> 트레이너 쌤 식단 제출 리포트
+              <span className="text-xs font-bold text-white flex items-center gap-1.5 whitespace-nowrap">
+                <ClipboardCheck className="w-4 h-4 text-sky-400 shrink-0" /> <span className="whitespace-nowrap">트레이너 쌤 식단 제출 리포트</span>
               </span>
               <button
                 onClick={() => setIsTrainerReportOpen(false)}
-                className="p-1 rounded-full text-neutral-400 hover:text-white hover:bg-neutral-800"
+                className="p-1 rounded-full text-neutral-400 hover:text-white hover:bg-neutral-800 shrink-0"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1009,15 +1009,15 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
             <div className="w-full space-y-2 pt-1">
               <button
                 onClick={handleShareTrainerReport}
-                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-sky-500/20 active:scale-95 transition"
+                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-sky-500/20 active:scale-95 transition whitespace-nowrap"
               >
-                <Share2 className="w-4 h-4" /> 카톡으로 쌤에게 즉시 전송
+                <Share2 className="w-4 h-4 shrink-0" /> <span>카톡으로 쌤에게 즉시 전송</span>
               </button>
               <button
                 onClick={handleDownloadTrainerReport}
-                className="w-full py-2.5 px-4 rounded-xl bg-neutral-800 hover:bg-neutral-750 text-neutral-200 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition"
+                className="w-full py-2.5 px-4 rounded-xl bg-neutral-800 hover:bg-neutral-750 text-neutral-200 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition whitespace-nowrap"
               >
-                <Download className="w-3.5 h-3.5" /> 식단표 이미지 파일 저장
+                <Download className="w-3.5 h-3.5 shrink-0" /> <span>식단표 이미지 파일 저장</span>
               </button>
             </div>
           </div>
@@ -1029,12 +1029,12 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center p-4">
           <div className="relative w-full max-w-sm bg-neutral-900 border border-neutral-800 rounded-3xl p-4 flex flex-col items-center gap-3 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="w-full flex items-center justify-between pb-1 border-b border-neutral-800">
-              <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                <CalendarCheck className="w-4 h-4 text-purple-400" /> 주간 오식완 결산 롱 영수증
+              <span className="text-xs font-bold text-white flex items-center gap-1.5 whitespace-nowrap">
+                <CalendarCheck className="w-4 h-4 text-purple-400 shrink-0" /> <span className="whitespace-nowrap">주간 오식완 결산 롱 영수증</span>
               </span>
               <button
                 onClick={() => setIsWeeklyWrapOpen(false)}
-                className="p-1 rounded-full text-neutral-400 hover:text-white hover:bg-neutral-800"
+                className="p-1 rounded-full text-neutral-400 hover:text-white hover:bg-neutral-800 shrink-0"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1049,15 +1049,15 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
             <div className="w-full space-y-2 pt-1">
               <button
                 onClick={handleShareWeeklyWrap}
-                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-purple-500/20 active:scale-95 transition"
+                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-purple-500/20 active:scale-95 transition whitespace-nowrap"
               >
-                <Share2 className="w-4 h-4" /> 인스타 스토리 주간 결산 박제
+                <Share2 className="w-4 h-4 shrink-0" /> <span>인스타 스토리 주간 결산 박제</span>
               </button>
               <button
                 onClick={handleDownloadWeeklyWrap}
-                className="w-full py-2.5 px-4 rounded-xl bg-neutral-800 hover:bg-neutral-750 text-neutral-200 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition"
+                className="w-full py-2.5 px-4 rounded-xl bg-neutral-800 hover:bg-neutral-750 text-neutral-200 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition whitespace-nowrap"
               >
-                <Download className="w-3.5 h-3.5" /> 롱 영수증 이미지 저장
+                <Download className="w-3.5 h-3.5 shrink-0" /> <span>롱 영수증 이미지 저장</span>
               </button>
             </div>
           </div>

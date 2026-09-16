@@ -465,15 +465,22 @@ export const StampCanvas: React.FC<StampCanvasProps> = ({
     ctx.textAlign = 'right';
     ctx.fillText(mealLabel ? `${mealLabel} · ${dateStr}` : dateStr, cardMarginX + cardWidth - 40, cardY + 60);
 
-    // 메뉴명
+    // 메뉴명 & 중량 (어휘 단위 자연스러운 줄바꿈)
     ctx.fillStyle = '#1c1917';
-    ctx.font = '800 42px "Noto Sans KR", sans-serif';
+    const maxTicketTitleW = cardWidth - 80 - 260;
+    const ticketTitleFontSize = nutrition.name.length > 18 ? 30 : nutrition.name.length > 10 ? 36 : 42;
+    ctx.font = `800 ${ticketTitleFontSize}px "Noto Sans KR", sans-serif`;
     ctx.textAlign = 'left';
-    ctx.fillText(nutrition.name, cardMarginX + 40, cardY + 130, cardWidth - 280);
 
+    const ticketTitleLines = wrapText(ctx, nutrition.name, maxTicketTitleW);
+    ticketTitleLines.slice(0, 2).forEach((line, idx) => {
+      ctx.fillText(line, cardMarginX + 40, cardY + 125 + idx * (ticketTitleFontSize + 4));
+    });
+
+    const ticketTitleOffset = ticketTitleLines.length > 1 ? ticketTitleFontSize : 0;
     ctx.fillStyle = '#78716c';
     ctx.font = '500 22px "Noto Sans KR", sans-serif';
-    ctx.fillText(nutrition.serving_size || '1인분', cardMarginX + 40, cardY + 175);
+    ctx.fillText(nutrition.serving_size || '1인분', cardMarginX + 40, cardY + 172 + ticketTitleOffset);
 
     // 우측 칼로리
     ctx.textAlign = 'right';
@@ -605,19 +612,55 @@ export const StampCanvas: React.FC<StampCanvasProps> = ({
   };
 
   /**
-   * 텍스트 자동 줄바꿈 헬퍼
+   * 텍스트 어휘 단위(Keep-all) 자동 줄바꿈 헬퍼
+   * 띄어쓰기 단어 단위로 묶어 한글 단어가 쪼개지지 않도록 방지하고,
+   * 단일 단어가 maxWidth를 초과할 때만 글자 단위로 분할합니다.
    */
   const wrapText = (ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] => {
-    const words = text.split('');
+    if (!text) return [];
+    const words = text.split(' ');
     const lines: string[] = [];
     let currentLine = '';
 
     for (let i = 0; i < words.length; i++) {
-      const testLine = currentLine + words[i];
+      const word = words[i];
+      const testLine = currentLine ? `${currentLine} ${word}` : word;
       const metrics = ctx.measureText(testLine);
-      if (metrics.width > maxWidth && i > 0) {
-        lines.push(currentLine);
-        currentLine = words[i];
+
+      if (metrics.width > maxWidth) {
+        if (currentLine) {
+          lines.push(currentLine);
+          // 단어 단독으로도 maxWidth를 넘을 경우 글자 단위로 안전하게 분할
+          const wordMetrics = ctx.measureText(word);
+          if (wordMetrics.width > maxWidth) {
+            let charLine = '';
+            for (const char of word) {
+              const charTest = charLine + char;
+              if (ctx.measureText(charTest).width > maxWidth && charLine) {
+                lines.push(charLine);
+                charLine = char;
+              } else {
+                charLine = charTest;
+              }
+            }
+            currentLine = charLine;
+          } else {
+            currentLine = word;
+          }
+        } else {
+          // 첫 단어부터 maxWidth를 초과하는 경우
+          let charLine = '';
+          for (const char of word) {
+            const charTest = charLine + char;
+            if (ctx.measureText(charTest).width > maxWidth && charLine) {
+              lines.push(charLine);
+              charLine = char;
+            } else {
+              charLine = charTest;
+            }
+          }
+          currentLine = charLine;
+        }
       } else {
         currentLine = testLine;
       }

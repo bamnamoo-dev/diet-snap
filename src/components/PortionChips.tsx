@@ -64,7 +64,7 @@ export const PortionChips: React.FC<PortionChipsProps> = ({
             <span className="text-xs font-bold text-neutral-100 block truncate">
               {nutrition.name}
             </span>
-            <span className="text-[11px] text-neutral-400">
+            <span className="text-[11px] text-neutral-400 whitespace-nowrap">
               기준: {nutrition.calories} kcal ({nutrition.serving_size || '1인분'})
             </span>
           </div>
@@ -72,9 +72,10 @@ export const PortionChips: React.FC<PortionChipsProps> = ({
 
         <button
           onClick={() => setIsModalOpen(true)}
-          className="px-2.5 py-1.5 bg-neutral-800 hover:bg-neutral-750 text-neutral-200 hover:text-white font-semibold text-xs rounded-xl flex items-center gap-1.5 border border-neutral-700 transition active:scale-95 shrink-0"
+          className="px-2.5 py-1.5 bg-neutral-800 hover:bg-neutral-750 text-neutral-200 hover:text-white font-semibold text-xs rounded-xl flex items-center gap-1.5 border border-neutral-700 transition active:scale-95 shrink-0 whitespace-nowrap"
         >
-          <Edit3 className="w-3.5 h-3.5 text-rose-400" /> 수치 수정
+          <Edit3 className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+          <span className="whitespace-nowrap">수치 수정</span>
         </button>
       </div>
 
@@ -89,8 +90,8 @@ export const PortionChips: React.FC<PortionChipsProps> = ({
       {/* 2. 끼니(Meal) 선택 1초 칩 바 */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between text-[11px] text-neutral-400 px-1">
-          <span className="font-semibold text-neutral-300">끼니 선택:</span>
-          <span className="text-neutral-500 text-[10px]">스탬프에 자동 인쇄</span>
+          <span className="font-semibold text-neutral-300 whitespace-nowrap">끼니 선택:</span>
+          <span className="text-neutral-500 text-[10px] whitespace-nowrap">스탬프에 자동 인쇄</span>
         </div>
         <div className="grid grid-cols-5 gap-1.5">
           {mealTypes.map(({ type, label, icon: Icon }) => {
@@ -100,14 +101,14 @@ export const PortionChips: React.FC<PortionChipsProps> = ({
                 key={type}
                 type="button"
                 onClick={() => onPortionChange({ ...portion, mealType: isSelected ? undefined : type })}
-                className={`py-1.5 px-1 rounded-xl text-xs font-bold flex items-center justify-center gap-1 border transition-all active:scale-95 ${
+                className={`py-1.5 px-1 rounded-xl text-xs font-bold flex items-center justify-center gap-1 border transition-all active:scale-95 whitespace-nowrap ${
                   isSelected
                     ? 'bg-rose-500 text-white border-rose-400 shadow-md shadow-rose-500/20'
                     : 'bg-neutral-900/90 text-neutral-400 border-neutral-800 hover:text-neutral-200'
                 }`}
               >
-                <Icon className="w-3 h-3" />
-                <span>{label}</span>
+                <Icon className="w-3 h-3 shrink-0" />
+                <span className="whitespace-nowrap">{label}</span>
               </button>
             );
           })}
@@ -117,8 +118,8 @@ export const PortionChips: React.FC<PortionChipsProps> = ({
       {/* 3. 치팅데이 / 유머 스탬프 모드 (수치 공포 해결) */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between text-[11px] text-neutral-400 px-1">
-          <span className="font-semibold text-neutral-300">인스타 방어 모드:</span>
-          <span className="text-rose-400 text-[10px] font-medium">부끄러운 고칼로리 싹 가리기</span>
+          <span className="font-semibold text-neutral-300 whitespace-nowrap">인스타 방어 모드:</span>
+          <span className="text-rose-400 text-[10px] font-medium whitespace-nowrap">고칼로리 위트 방어</span>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
           {humorModes.map(({ mode, label }) => {
@@ -134,7 +135,7 @@ export const PortionChips: React.FC<PortionChipsProps> = ({
                     : 'bg-neutral-900/90 text-neutral-400 border-neutral-800 hover:text-neutral-200'
                 }`}
               >
-                {label}
+                <span className="whitespace-nowrap">{label}</span>
               </button>
             );
           })}
@@ -249,9 +250,9 @@ export const PortionChips: React.FC<PortionChipsProps> = ({
       {/* 5. 템플릿 선택기 (4종) */}
       <div className="space-y-1.5 pt-0.5">
         <div className="flex items-center justify-between text-[11px] text-neutral-400 px-1">
-          <span className="font-semibold text-neutral-300">스탬프 디자인 템플릿:</span>
-          <span className="text-amber-400 text-[10px] font-medium flex items-center gap-0.5">
-            <Crown className="w-3 h-3" /> Pro 한정판 포함
+          <span className="font-semibold text-neutral-300 whitespace-nowrap">스탬프 디자인 템플릿:</span>
+          <span className="text-amber-400 text-[10px] font-medium flex items-center gap-0.5 whitespace-nowrap">
+            <Crown className="w-3 h-3 shrink-0" /> Pro 한정판 포함
           </span>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
@@ -262,15 +263,15 @@ export const PortionChips: React.FC<PortionChipsProps> = ({
                 key={tpl.id}
                 type="button"
                 onClick={() => onTemplateChange(tpl.id)}
-                className={`py-2 px-2 text-xs font-bold rounded-xl border transition-all flex items-center justify-center gap-1 active:scale-95 ${
+                className={`py-2 px-2 text-xs font-bold rounded-xl border transition-all flex items-center justify-center gap-1 active:scale-95 whitespace-nowrap ${
                   isSelected
                     ? 'bg-neutral-100 text-neutral-950 border-white shadow-md'
                     : 'bg-neutral-900/90 text-neutral-300 border-neutral-800 hover:bg-neutral-850'
                 }`}
               >
-                <span>{tpl.name}</span>
+                <span className="whitespace-nowrap">{tpl.name}</span>
                 {tpl.isPro && (
-                  <span className="text-[9px] px-1 rounded bg-amber-400/20 text-amber-300 font-mono">
+                  <span className="text-[9px] px-1 rounded bg-amber-400/20 text-amber-300 font-mono shrink-0">
                     PRO
                   </span>
                 )}
@@ -284,7 +285,7 @@ export const PortionChips: React.FC<PortionChipsProps> = ({
       <div className="bg-neutral-900 p-1.5 rounded-2xl border border-neutral-800 flex items-center gap-1.5">
         <button
           onClick={() => onAspectRatioChange('9:16')}
-          className={`flex-1 py-2 text-xs font-bold rounded-xl transition ${
+          className={`flex-1 py-2 text-xs font-bold rounded-xl transition whitespace-nowrap ${
             aspectRatio === '9:16'
               ? 'bg-neutral-800 text-white shadow-sm'
               : 'text-neutral-400 hover:text-neutral-200'
@@ -294,7 +295,7 @@ export const PortionChips: React.FC<PortionChipsProps> = ({
         </button>
         <button
           onClick={() => onAspectRatioChange('1:1')}
-          className={`flex-1 py-2 text-xs font-bold rounded-xl transition ${
+          className={`flex-1 py-2 text-xs font-bold rounded-xl transition whitespace-nowrap ${
             aspectRatio === '1:1'
               ? 'bg-neutral-800 text-white shadow-sm'
               : 'text-neutral-400 hover:text-neutral-200'
