@@ -15,6 +15,8 @@ interface IntroViewProps {
   presets: PresetItem[];
   hasSavedWork: boolean;
   onResumeWork: () => void;
+  onOpenHistoryClick?: () => void;
+  historyCount?: number;
 }
 
 export const IntroView: React.FC<IntroViewProps> = ({
@@ -24,6 +26,8 @@ export const IntroView: React.FC<IntroViewProps> = ({
   presets,
   hasSavedWork,
   onResumeWork,
+  onOpenHistoryClick,
+  historyCount = 0,
 }) => {
   return (
     <div className="w-full max-w-md px-4 pt-2 pb-12 flex flex-col items-center gap-5 font-sans">
@@ -139,6 +143,24 @@ export const IntroView: React.FC<IntroViewProps> = ({
           <span className="text-[9px] text-neutral-500">국물/양 손쉬운 수정</span>
         </div>
       </div>
+
+      {/* 4-1. 내 식단 갤러리 바로가기 버튼 (기록이 있는 경우 강조) */}
+      {onOpenHistoryClick && (
+        <button
+          onClick={onOpenHistoryClick}
+          className="w-full py-3 px-4 rounded-2xl bg-neutral-900/90 hover:bg-neutral-850 border border-neutral-800 hover:border-rose-500/40 text-neutral-200 flex items-center justify-between shadow-md transition active:scale-[0.98]"
+        >
+          <span className="flex items-center gap-2 text-xs font-bold text-white">
+            <span className="p-1 rounded-lg bg-rose-500/20 text-rose-400">
+              <Receipt className="w-4 h-4" />
+            </span>
+            <span>내 오식완 기록 갤러리 보러가기</span>
+          </span>
+          <span className="text-xs font-mono text-rose-400 font-bold flex items-center gap-1">
+            {historyCount > 0 ? `${historyCount}개의 기록` : '보관함'} <ArrowRight className="w-3.5 h-3.5" />
+          </span>
+        </button>
+      )}
 
       {/* 5. 샘플 식단으로 1초 체험하기 섹션 */}
       <div className="w-full pt-3">

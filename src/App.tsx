@@ -3,20 +3,27 @@ import { NutritionItem, PortionModifier, StampTemplate, AspectRatio } from './ty
 import { compressImage, CompressionResult } from './utils/compressImage';
 import { StampCanvas } from './components/StampCanvas';
 import { PortionChips } from './components/PortionChips';
+import { IntroView, PresetItem } from './components/IntroView';
+import { GalleryView } from './components/GalleryView';
+import { 
+  SavedDietRecord, 
+  getAllDietRecords, 
+  saveDietRecord, 
+  deleteDietRecord 
+} from './utils/dietStorage';
 import { 
   Camera, 
   Upload, 
   Download, 
   Share2, 
   Zap, 
-  Sparkles, 
   Crown, 
   CheckCircle2, 
   RefreshCw,
   Maximize2,
-  ArrowLeft 
+  ArrowLeft,
+  BookOpen
 } from 'lucide-react';
-import { IntroView, PresetItem } from './components/IntroView';
 
 // 초기 데모용 프리셋 식단 데이터
 const SAMPLE_PRESETS: { name: string; img: string; data: NutritionItem }[] = [
@@ -99,6 +106,18 @@ const SAMPLE_PRESETS: { name: string; img: string; data: NutritionItem }[] = [
 ];
 
 export const App: React.FC = () => {
+  // 화면 모드: 'intro' (뷰파인더 첫화면) | 'editor' (스탬프 편집/확인) | 'gallery' (식단 기록 관리)
+  // ✨ 모바일 카메라 촬영 후 브라우저 새로고침(Reload) 시에도 첫화면으로 튕기지 않도록 상태 복원
+  const [currentView, setCurrentView] = useState<'intro' | 'editor' | 'gallery'>(() => {
+    try {
+      const saved = sessionStorage.getItem('dietsnap_active_view') || localStorage.getItem('dietsnap_active_view');
+      if (saved === 'editor' || saved === 'gallery') return saved;
+      return 'intro';
+    } catch {
+      return 'intro';
+    }
+  });
+
   // 상태 관리 (LocalStorage에서 이전 식단 자동 복원)
   const [imageSrc, setImageSrc] = useState<string | null>(() => {
     try {
@@ -133,8 +152,21 @@ export const App: React.FC = () => {
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [compressStats, setCompressStats] = useState<CompressionResult | null>(null);
 
-  // 화면 모드: 'intro' (첫 인트로 뷰파인더 화면) | 'editor' (스탬프 편집/저장 화면)
-  const [currentView, setCurrentView] = useState<'intro' | 'editor'>('intro');
+  // 식단 히스토리 갤러리 레코드 목록 및 현재 작업 레코드 ID
+  const [records, setRecords] = useState<SavedDietRecord[]>([]);
+  const [currentRecordId, setCurrentRecordId] = useState<string | null>(null);
+
+  // 앱 마운트 시 IndexedDB에서 기존 저장된 식단 히스토리 불러오기
+  useEffect(() => {
+    getAllDietRecords()
+      .then((loaded) => {
+        setRecords(loaded);
+      })
+      .catch((err) => {
+        console.warn('Failed to load diet records', err);
+      });
+  }, []);
+
   const [hasSavedWork, setHasSavedWork] = useState<boolean>(() => {
     try {
       return Boolean(localStorage.getItem('dietsnap_current_img'));
@@ -142,6 +174,17 @@ export const App: React.FC = () => {
       return false;
     }
   });
+
+  // 뷰 상태 변경 시 세션/로컬 동시 저장 (새로고침 방어)
+  const changeView = (newView: 'intro' | 'editor' | 'gallery') => {
+    setCurrentView(newView);
+    try {
+      sessionStorage.setItem('dietsnap_active_view', newView);
+      localStorage.setItem('dietsnap_active_view', newView);
+    } catch (e) {
+      console.warn('Session save failed', e);
+    }
+  };
 
   // 데이터 변경 시 로컬에 자동 영구 보관 (새로고침 방어)
   useEffect(() => {
@@ -166,8 +209,12 @@ export const App: React.FC = () => {
 
   const isCameraRef = useRef<boolean>(false);
 
-  // 카메라 촬영 및 갤러리 파일 선택 트리거 헬퍼
+  // 카메라 촬영 트리거 헬퍼 (카메라 앱 전환 전 에디터 뷰로 사전 마킹하여 새로고침 방어)
   const handleTriggerCapture = () => {
+    try {
+      sessionStorage.setItem('dietsnap_active_view', 'editor');
+      localStorage.setItem('dietsnap_active_view', 'editor');
+    } catch {}
     isCameraRef.current = true;
     if (cameraInputRef.current) {
       cameraInputRef.current.value = '';
@@ -175,7 +222,12 @@ export const App: React.FC = () => {
     }
   };
 
+  // 앨범 파일 선택 트리거 헬퍼
   const handleTriggerGallery = () => {
+    try {
+      sessionStorage.setItem('dietsnap_active_view', 'editor');
+      localStorage.setItem('dietsnap_active_view', 'editor');
+    } catch {}
     isCameraRef.current = false;
     if (galleryInputRef.current) {
       galleryInputRef.current.value = '';
@@ -183,7 +235,7 @@ export const App: React.FC = () => {
     }
   };
 
-  // 1. 사진 업로드 및 1024px 클라이언트 압축 후 실제 Gemini AI 분석 호출
+  // 1. 사진 업로드/촬영 완료 시: 즉시 에디터 화면 전환 및 원본 프리뷰 표시 후 AI 분석
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -191,15 +243,17 @@ export const App: React.FC = () => {
     try {
       setErrorMessage(null);
       setIsAnalyzing(true);
-      setCurrentView('editor'); // 촬영/선택 즉시 에디터 화면으로 전환하여 분석 표시
 
-      // ✨ 1. 내 폰 화면 및 저장 캔버스용: 원본 고화질(Original) 그대로 적용 (자동 다운로드 팝업 방지)
+      // ✨ 핵심 1: 사용자가 사진을 확인하는 즉시 에디터 모드로 화면 전환 & 고정
+      changeView('editor');
+
+      // ✨ 핵심 2: 내 폰 화면 및 저장 캔버스용: 원본 고화질(Original) 그대로 0.01초 즉각 프리뷰 렌더링!
       const originalObjectUrl = URL.createObjectURL(file);
       setImageSrc(originalObjectUrl);
 
       setStatusMessage('사진 최적화 중...');
 
-      // 🚀 2. 구글 API 전송용: 디테일(양념, 김치 조각, 밥알 질감) 정밀 식별을 위해 1536px 고화질 압축본 생성
+      // 🚀 구글 API 전송용: 1536px 고화질 압축본 생성
       const compressed = await compressImage(file, 1536, 0.88);
       setCompressStats(compressed);
 
@@ -209,7 +263,7 @@ export const App: React.FC = () => {
         console.warn('Backup save failed', e);
       }
 
-      setStatusMessage('AI 분석 중...');
+      setStatusMessage('AI 칼로리 & 탄단지 분석 중...');
 
       // 3. 실제 Gemini AI 백엔드 라우트 호출 (/api/analyze)
       const response = await fetch('/api/analyze', {
@@ -225,9 +279,35 @@ export const App: React.FC = () => {
 
       const aiResult: NutritionItem = await response.json();
       setNutrition(aiResult);
-      setPortion({ scale: 1.0, excludeSoup: false });
-      setStatusMessage('✨ 분석 완료! 인스타 스토리 공유 또는 저장해보세요');
-      setTimeout(() => setStatusMessage(''), 3000);
+      const initialPortion = { scale: 1.0, excludeSoup: false };
+      setPortion(initialPortion);
+      setStatusMessage('✨ 분석 완료! 갤러리에 자동 저장되었습니다');
+      setTimeout(() => setStatusMessage(''), 3500);
+
+      // 💾 4. 분석된 식단 즉시 IndexedDB 갤러리에 영구 자동 저장!
+      const now = new Date();
+      const dateStr = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      const dateKey = now.toISOString().slice(0, 10);
+      const newId = `diet_${now.getTime()}`;
+
+      const newRecord: SavedDietRecord = {
+        id: newId,
+        timestamp: now.getTime(),
+        dateStr,
+        timeStr,
+        dateKey,
+        imageSrc: compressed.dataUrl,
+        nutrition: aiResult,
+        portion: initialPortion,
+        template,
+        aspectRatio,
+      };
+
+      await saveDietRecord(newRecord);
+      setRecords((prev) => [newRecord, ...prev.filter((r) => r.id !== newId)]);
+      setCurrentRecordId(newId);
+
     } catch (err: any) {
       console.error('Analysis error:', err);
       setErrorMessage(err.message || '식단 분석에 실패했습니다.');
@@ -237,16 +317,65 @@ export const App: React.FC = () => {
     }
   };
 
-  // 2. 프리셋 식단 변경
+  // 2. 프리셋 식단 선택
   const handleSelectPreset = (preset: typeof SAMPLE_PRESETS[0]) => {
     setImageSrc(preset.img);
     setNutrition(preset.data);
     setPortion({ scale: 1.0, excludeSoup: false });
     setCompressStats(null);
-    setCurrentView('editor'); // 프리셋 선택 시 바로 편집기 화면으로 전환
+    setCurrentRecordId(null);
+    changeView('editor');
   };
 
-  // 3. 고화질 JPG 다운로드
+  // 3. 갤러리에서 특정 식단 선택하여 에디터로 불러오기
+  const handleSelectRecordFromGallery = (record: SavedDietRecord) => {
+    setImageSrc(record.imageSrc);
+    setNutrition(record.nutrition);
+    setPortion(record.portion);
+    if (record.template) setTemplate(record.template);
+    if (record.aspectRatio) setAspectRatio(record.aspectRatio);
+    setCurrentRecordId(record.id);
+    changeView('editor');
+  };
+
+  // 4. 갤러리에서 특정 식단 삭제하기
+  const handleDeleteRecord = async (id: string) => {
+    await deleteDietRecord(id);
+    setRecords((prev) => prev.filter((r) => r.id !== id));
+    if (currentRecordId === id) {
+      setCurrentRecordId(null);
+    }
+  };
+
+  // 5. 보정 칩 변경 시 현재 레코드도 IndexedDB에 자동 동기화
+  const handlePortionChange = (updatedPortion: PortionModifier) => {
+    setPortion(updatedPortion);
+    if (currentRecordId) {
+      setRecords((prev) =>
+        prev.map((r) => (r.id === currentRecordId ? { ...r, portion: updatedPortion } : r))
+      );
+      const target = records.find((r) => r.id === currentRecordId);
+      if (target) {
+        saveDietRecord({ ...target, portion: updatedPortion }).catch(() => {});
+      }
+    }
+  };
+
+  // 6. 수치 직접 수정 시 현재 레코드도 자동 동기화
+  const handleNutritionChange = (updatedNutrition: NutritionItem) => {
+    setNutrition(updatedNutrition);
+    if (currentRecordId) {
+      setRecords((prev) =>
+        prev.map((r) => (r.id === currentRecordId ? { ...r, nutrition: updatedNutrition } : r))
+      );
+      const target = records.find((r) => r.id === currentRecordId);
+      if (target) {
+        saveDietRecord({ ...target, nutrition: updatedNutrition }).catch(() => {});
+      }
+    }
+  };
+
+  // 7. 고화질 JPG 다운로드
   const handleDownload = () => {
     const canvas = canvasElementRef.current;
     if (!canvas) return;
@@ -257,7 +386,7 @@ export const App: React.FC = () => {
     link.click();
   };
 
-  // 4. 인스타그램 스토리 공유 (Web Share API 연동)
+  // 8. 인스타그램 스토리 공유 (Web Share API 연동)
   const handleShare = async () => {
     const canvas = canvasElementRef.current;
     if (!canvas) return;
@@ -277,14 +406,13 @@ export const App: React.FC = () => {
           console.log('Share canceled or failed', err);
         }
       } else {
-        // Web Share 미지원 시 바로 다운로드로 친절히 대체
         handleDownload();
         alert('이미지가 저장되었습니다! 인스타그램 스토리에서 사진을 불러와 공유해보세요 ✨');
       }
     }, 'image/jpeg', 0.95);
   };
 
-  // 5. 모바일 전체화면 토글
+  // 9. 모바일 전체화면 토글
   const [isFullscreen, setIsFullscreen] = useState(false);
   const handleToggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -318,15 +446,24 @@ export const App: React.FC = () => {
       {/* 상단 네비게이션 헤더 */}
       <header className="w-full max-w-md px-4 py-3 border-b border-neutral-800/80 sticky top-0 bg-[#0d0e12]/90 backdrop-blur-md z-30 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          {/* 에디터 모드일 때: 인트로(새 촬영)로 돌아가기 버튼 */}
+          {/* 상황별 뒤로가기 버튼 */}
           {currentView === 'editor' ? (
             <button
-              onClick={() => setCurrentView('intro')}
+              onClick={() => changeView('intro')}
               className="py-1 px-2.5 rounded-lg bg-neutral-850 hover:bg-neutral-800 text-neutral-300 border border-neutral-700 hover:text-white transition active:scale-95 flex items-center gap-1.5 shadow-sm"
               title="새 촬영으로 돌아가기"
             >
               <ArrowLeft className="w-4 h-4 text-neutral-300" />
               <span className="text-xs font-semibold pr-0.5">새 촬영</span>
+            </button>
+          ) : currentView === 'gallery' ? (
+            <button
+              onClick={() => changeView('editor')}
+              className="py-1 px-2.5 rounded-lg bg-neutral-850 hover:bg-neutral-800 text-neutral-300 border border-neutral-700 hover:text-white transition active:scale-95 flex items-center gap-1.5 shadow-sm"
+              title="에디터로 돌아가기"
+            >
+              <ArrowLeft className="w-4 h-4 text-neutral-300" />
+              <span className="text-xs font-semibold pr-0.5">에디터</span>
             </button>
           ) : (
             <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-rose-500 to-amber-400 flex items-center justify-center shadow-md shadow-rose-500/20">
@@ -342,6 +479,27 @@ export const App: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-1.5">
+          {/* 🗂️ 내 식단 갤러리 관리 버튼 (기록 개수 뱃지) */}
+          <button
+            onClick={() => changeView(currentView === 'gallery' ? 'editor' : 'gallery')}
+            className={`text-xs px-2.5 py-1.5 rounded-xl font-bold flex items-center gap-1.5 transition-all shadow-sm ${
+              currentView === 'gallery'
+                ? 'bg-rose-500 text-white shadow-rose-500/30'
+                : 'bg-neutral-850 text-neutral-300 border border-neutral-700 hover:text-white'
+            }`}
+            title="내 오식완 기록 갤러리"
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>내 기록</span>
+            {records.length > 0 && (
+              <span className={`text-[10px] px-1 rounded-full font-mono font-bold ${
+                currentView === 'gallery' ? 'bg-white text-rose-600' : 'bg-rose-500 text-white'
+              }`}>
+                {records.length}
+              </span>
+            )}
+          </button>
+
           {/* ⛶ 전체화면 전환 버튼 */}
           <button
             onClick={handleToggleFullscreen}
@@ -375,10 +533,20 @@ export const App: React.FC = () => {
           onSelectPreset={handleSelectPreset}
           presets={SAMPLE_PRESETS}
           hasSavedWork={hasSavedWork}
-          onResumeWork={() => setCurrentView('editor')}
+          onResumeWork={() => changeView('editor')}
+          onOpenHistoryClick={() => changeView('gallery')}
+          historyCount={records.length}
+        />
+      ) : currentView === 'gallery' ? (
+        /* 2. 오식완 식단 갤러리 관리 페이지 */
+        <GalleryView
+          records={records}
+          onSelectRecord={handleSelectRecordFromGallery}
+          onDeleteRecord={handleDeleteRecord}
+          onNewCaptureClick={handleTriggerCapture}
         />
       ) : (
-        /* 2. 에디터 화면 (스탬프 캔버스 & 1초 보정 칩 & 공유/저장) */
+        /* 3. 에디터 화면 (스탬프 캔버스 & 1초 보정 칩 & 공유/저장) */
         <main className="w-full max-w-md px-4 pt-4 flex flex-col items-center gap-4">
           {/* 압축 통계 뱃지 */}
           {compressStats && (
@@ -446,9 +614,9 @@ export const App: React.FC = () => {
           {/* 1초 보정 칩 & 수치 직접 수정 인터랙션 */}
           <PortionChips
             portion={portion}
-            onPortionChange={setPortion}
+            onPortionChange={handlePortionChange}
             nutrition={nutrition}
-            onNutritionChange={(updated) => setNutrition(updated)}
+            onNutritionChange={handleNutritionChange}
             template={template}
             onTemplateChange={setTemplate}
             aspectRatio={aspectRatio}
