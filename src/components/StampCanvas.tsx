@@ -13,6 +13,7 @@ interface StampCanvasProps {
   onOffsetChange?: (offsetY: number) => void;
   transform?: PhotoTransform;
   onTransformChange?: (transform: PhotoTransform) => void;
+  onAspectRatioChange?: (ratio: AspectRatio) => void;
   onCanvasReady?: (canvas: HTMLCanvasElement) => void;
 }
 
@@ -27,6 +28,7 @@ export const StampCanvas: React.FC<StampCanvasProps> = ({
   onOffsetChange,
   transform,
   onTransformChange,
+  onAspectRatioChange,
   onCanvasReady,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -896,10 +898,28 @@ export const StampCanvas: React.FC<StampCanvasProps> = ({
         }}
       />
 
-      {/* 좌상단: 드래그 구도 조절 안내 */}
-      <div className="absolute top-2.5 left-2.5 bg-black/60 backdrop-blur-md border border-white/15 px-2.5 py-1 rounded-full text-[10px] text-white/90 font-medium flex items-center gap-1 shadow-sm pointer-events-none">
-        <Move className="w-2.5 h-2.5 text-rose-400 shrink-0" />
-        <span>드래그로 자르기/이동</span>
+      {/* 좌상단: 9:16 ⇄ 1:1 비율 전환 버튼 & 드래그 안내 */}
+      <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 z-20">
+        {onAspectRatioChange && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onAspectRatioChange(aspectRatio === '9:16' ? '1:1' : '9:16');
+            }}
+            className="bg-neutral-950/85 hover:bg-neutral-900 backdrop-blur-md border border-white/20 px-2.5 py-1 rounded-full text-[10px] text-white font-bold flex items-center gap-1.5 shadow-xl transition active:scale-95 cursor-pointer"
+            title="화면 비율 전환 (9:16 인스타 스토리 ⇄ 1:1 일반 피드)"
+          >
+            <span className="text-amber-300 font-mono font-black">{aspectRatio}</span>
+            <span className="text-[9px] px-1 py-0.2 rounded bg-white/10 text-neutral-200 font-normal">
+              {aspectRatio === '9:16' ? '스토리' : '피드'}
+            </span>
+          </button>
+        )}
+
+        <div className="bg-black/50 backdrop-blur-sm border border-white/10 px-2 py-1 rounded-full text-[9px] text-white/75 font-medium flex items-center gap-1 shadow-sm pointer-events-none">
+          <Move className="w-2.5 h-2.5 text-rose-400 shrink-0" />
+          <span>드래그</span>
+        </div>
       </div>
 
       {/* 우상단: 감성 퀵 줌 컨트롤 툴바 */}

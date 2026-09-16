@@ -436,7 +436,21 @@ export const App: React.FC = () => {
     }
   };
 
-  // 7. 고화질 JPG 다운로드
+  // 8. 비율 변경 (9:16 인스타 스토리 ⇄ 1:1 일반 피드) 시 현재 레코드도 IndexedDB 자동 동기화
+  const handleAspectRatioChange = (newRatio: AspectRatio) => {
+    setAspectRatio(newRatio);
+    if (currentRecordId) {
+      setRecords((prev) =>
+        prev.map((r) => (r.id === currentRecordId ? { ...r, aspectRatio: newRatio } : r))
+      );
+      const target = records.find((r) => r.id === currentRecordId);
+      if (target) {
+        saveDietRecord({ ...target, aspectRatio: newRatio }).catch(() => {});
+      }
+    }
+  };
+
+  // 9. 고화질 JPG 다운로드
   const handleDownload = () => {
     const canvas = canvasElementRef.current;
     if (!canvas) return;
@@ -635,7 +649,9 @@ export const App: React.FC = () => {
               </div>
             )}
 
-            <div className="h-full max-h-full aspect-[9/16] flex items-center justify-center">
+            <div className={`h-full max-h-full flex items-center justify-center transition-all duration-200 ${
+              aspectRatio === '9:16' ? 'aspect-[9/16]' : 'aspect-square max-w-[380px]'
+            }`}>
               <StampCanvas
                 imageSrc={imageSrc}
                 nutrition={nutrition}
@@ -645,6 +661,7 @@ export const App: React.FC = () => {
                 isPro={isPro}
                 transform={photoTransform}
                 onTransformChange={handleTransformChange}
+                onAspectRatioChange={handleAspectRatioChange}
                 onCanvasReady={(canvas) => {
                   canvasElementRef.current = canvas;
                 }}
