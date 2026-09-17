@@ -1,6 +1,7 @@
 import React from 'react';
 import { Camera, Upload, Sparkles, Zap, Receipt, ArrowRight, RotateCcw } from 'lucide-react';
-import { NutritionItem } from '../types/diet';
+import { NutritionItem, PersonaTheme } from '../types/diet';
+import { PERSONA_THEMES, PERSONA_THEMES_LIST } from '../canvas/themes/themeHelper';
 
 export interface PresetItem {
   name: string;
@@ -20,6 +21,8 @@ interface IntroViewProps {
   isPro?: boolean;
   remainingCount?: number;
   onOpenProModal?: () => void;
+  currentTheme?: PersonaTheme;
+  onThemeChange?: (theme: PersonaTheme) => void;
 }
 
 export const IntroView: React.FC<IntroViewProps> = ({
@@ -34,27 +37,53 @@ export const IntroView: React.FC<IntroViewProps> = ({
   isPro = false,
   remainingCount = 3,
   onOpenProModal,
+  currentTheme = 'seongsu',
+  onThemeChange,
 }) => {
+  const themeMeta = PERSONA_THEMES[currentTheme] || PERSONA_THEMES.seongsu;
+
   return (
-    <div className="w-full max-w-md px-3 pt-2 pb-12 flex flex-col items-center gap-4 font-sans">
+    <div className="w-full max-w-md px-3 pt-2 pb-12 flex flex-col items-center gap-3.5 font-sans">
+      
+      {/* 🌟 3대 페르소나 감성 테마 선택 바 (첫 화면 상단 고정) */}
+      <div className="w-full grid grid-cols-3 gap-1 bg-neutral-900/95 p-1 rounded-2xl border border-neutral-800 shadow-sm backdrop-blur-md">
+        {PERSONA_THEMES_LIST.map((th) => {
+          const isActive = currentTheme === th.id;
+          return (
+            <button
+              key={th.id}
+              type="button"
+              onClick={() => onThemeChange?.(th.id)}
+              className={`py-2 px-1.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1 active:scale-95 whitespace-nowrap ${
+                isActive
+                  ? th.themeActiveTabClass
+                  : 'text-neutral-400 hover:text-neutral-200'
+              }`}
+            >
+              <span>{th.emoji}</span>
+              <span className="truncate">{th.shortName} 테마</span>
+            </button>
+          );
+        })}
+      </div>
       
       {/* 📸 카메라 뷰파인더 포커싱 히어로 카드 (앱의 핵심 첫인상) */}
       <div className="relative w-full aspect-[4/3] rounded-3xl bg-gradient-to-b from-neutral-900/95 via-neutral-900/70 to-neutral-950 border border-neutral-800/90 p-5 flex flex-col items-center justify-between overflow-hidden shadow-2xl backdrop-blur-md">
         
-        {/* 은은한 배경 빛 번짐 효과 (Glow Accent) */}
-        <div className="absolute -top-12 -left-12 w-36 h-36 bg-rose-500/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-12 -right-12 w-36 h-36 bg-amber-400/20 rounded-full blur-3xl pointer-events-none" />
+        {/* 은은한 테마별 배경 빛 번짐 효과 (Glow Accent) */}
+        <div className={`absolute -top-12 -left-12 w-36 h-36 rounded-full blur-3xl pointer-events-none ${themeMeta.glowLeftClass}`} />
+        <div className={`absolute -bottom-12 -right-12 w-36 h-36 rounded-full blur-3xl pointer-events-none ${themeMeta.glowRightClass}`} />
 
         {/* 뷰파인더 코너 포커싱 레티클 (4개 모서리 카메라 가이드라인) */}
-        <div className="absolute top-3.5 left-3.5 w-6 h-6 border-t-2 border-l-2 border-rose-400/80 rounded-tl-sm pointer-events-none" />
-        <div className="absolute top-3.5 right-3.5 w-6 h-6 border-t-2 border-r-2 border-rose-400/80 rounded-tr-sm pointer-events-none" />
-        <div className="absolute bottom-3.5 left-3.5 w-6 h-6 border-b-2 border-l-2 border-rose-400/80 rounded-bl-sm pointer-events-none" />
-        <div className="absolute bottom-3.5 right-3.5 w-6 h-6 border-b-2 border-r-2 border-rose-400/80 rounded-br-sm pointer-events-none" />
+        <div className={`absolute top-3.5 left-3.5 w-6 h-6 border-t-2 border-l-2 ${themeMeta.reticleBorderClass} rounded-tl-sm pointer-events-none`} />
+        <div className={`absolute top-3.5 right-3.5 w-6 h-6 border-t-2 border-r-2 ${themeMeta.reticleBorderClass} rounded-tr-sm pointer-events-none`} />
+        <div className={`absolute bottom-3.5 left-3.5 w-6 h-6 border-b-2 border-l-2 ${themeMeta.reticleBorderClass} rounded-bl-sm pointer-events-none`} />
+        <div className={`absolute bottom-3.5 right-3.5 w-6 h-6 border-b-2 border-r-2 ${themeMeta.reticleBorderClass} rounded-br-sm pointer-events-none`} />
 
         {/* 뷰파인더 상단 인디케이터 & 잔여 촬영 횟수 */}
         <div className="w-full flex items-center justify-between text-[11px] font-mono z-10 px-1">
-          <span className="flex items-center gap-1.5 font-semibold text-rose-400">
-            <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+          <span className={`flex items-center gap-1.5 font-semibold ${themeMeta.indicatorColor}`}>
+            <span className="w-2 h-2 rounded-full bg-current animate-pulse" />
             TODAY'S DIET LOG
           </span>
           
@@ -78,23 +107,23 @@ export const IntroView: React.FC<IntroViewProps> = ({
         <div className="flex flex-col items-center justify-center my-auto text-center z-10">
           <div className="relative mb-3.5 group cursor-pointer" onClick={onCaptureClick}>
             {/* 펄스 링 */}
-            <div className="absolute -inset-2.5 rounded-full bg-gradient-to-tr from-rose-500/30 to-amber-400/30 blur-sm animate-pulse" />
-            <div className="relative w-16 h-16 rounded-full bg-gradient-to-tr from-rose-500 via-pink-500 to-amber-400 p-[2px] shadow-lg shadow-rose-500/20 flex items-center justify-center transition-transform active:scale-90">
+            <div className={`absolute -inset-2.5 rounded-full blur-sm animate-pulse bg-gradient-to-tr ${themeMeta.lensPulseGradient}`} />
+            <div className={`relative w-16 h-16 rounded-full p-[2px] shadow-lg flex items-center justify-center transition-transform active:scale-90 bg-gradient-to-tr ${themeMeta.lensRingGradient}`}>
               <div className="w-full h-full rounded-full bg-[#121318] flex items-center justify-center">
                 <Camera className="w-7 h-7 text-white transition-transform group-hover:scale-110" />
               </div>
             </div>
-            {/* 반짝이 배지 */}
-            <div className="absolute -bottom-1 -right-1 bg-amber-400 text-neutral-950 p-1 rounded-full shadow-md">
-              <Sparkles className="w-3 h-3 fill-current" />
+            {/* 반짝이/캐릭터 배지 */}
+            <div className={`absolute -bottom-1 -right-1 p-1 rounded-full shadow-md text-xs flex items-center justify-center leading-none ${themeMeta.lensBadgeBgClass}`}>
+              {themeMeta.lensBadgeEmoji}
             </div>
           </div>
 
           <h2 className="text-lg font-extrabold text-white tracking-tight flex items-center gap-1.5 whitespace-nowrap">
-            오늘 뭐 드셨나요? ✨
+            {themeMeta.headingText} {themeMeta.headingEmoji}
           </h2>
           <p className="text-xs text-neutral-400 pt-1 leading-relaxed max-w-[290px] break-keep mx-auto">
-            사진 1장 찍으면 <b className="text-neutral-200 whitespace-nowrap">1.2초 만에</b> 성수동 감성 영수증 & 탄단지 명세서 자동 완성
+            {themeMeta.subtext}
           </p>
         </div>
 
@@ -102,7 +131,7 @@ export const IntroView: React.FC<IntroViewProps> = ({
         <div className="w-full flex items-center justify-center gap-1.5 opacity-40 z-10">
           <div className="w-1.5 h-1 bg-neutral-400 rounded-full" />
           <div className="w-4 h-[1px] bg-neutral-500" />
-          <div className="w-2 h-1 bg-rose-400 rounded-full" />
+          <div className="w-2 h-1 bg-current rounded-full" />
           <div className="w-4 h-[1px] bg-neutral-500" />
           <div className="w-1.5 h-1 bg-neutral-400 rounded-full" />
         </div>
@@ -113,9 +142,9 @@ export const IntroView: React.FC<IntroViewProps> = ({
         {/* 카메라로 바로 촬영 (Main Primary CTA) */}
         <button
           onClick={onCaptureClick}
-          className="w-full py-4 px-5 rounded-2xl bg-gradient-to-r from-rose-500 via-pink-500 to-amber-400 hover:opacity-95 text-white font-black text-base flex items-center justify-center gap-2.5 shadow-xl shadow-rose-500/25 transition active:scale-[0.98] whitespace-nowrap"
+          className={`w-full py-4 px-5 rounded-2xl font-black text-base flex items-center justify-center gap-2.5 transition active:scale-[0.98] whitespace-nowrap ${themeMeta.shutterBtnClass}`}
         >
-          <Camera className="w-5 h-5 text-white shrink-0" />
+          <Camera className="w-5 h-5 shrink-0" />
           <span className="whitespace-nowrap">카메라로 바로 촬영하기</span>
         </button>
 

@@ -4,7 +4,7 @@ import { compressImage, CompressionResult } from './utils/compressImage';
 import { StampCanvas } from './components/StampCanvas';
 import { PortionChips } from './components/PortionChips';
 import { TEMPLATES_LIST } from './canvas/templates/types';
-import { PERSONA_THEMES_LIST } from './canvas/themes/themeHelper';
+import { PERSONA_THEMES_LIST, getPersonaTheme } from './canvas/themes/themeHelper';
 import { THEME_STICKERS_MAP, STICKER_DEFINITIONS } from './canvas/stickers/drawStickers';
 import { IntroView, PresetItem } from './components/IntroView';
 import { GalleryView } from './components/GalleryView';
@@ -156,9 +156,14 @@ export const App: React.FC = () => {
   const [portion, setPortion] = useState<PortionModifier>(() => {
     try {
       const saved = localStorage.getItem('dietsnap_current_portion');
-      return saved ? JSON.parse(saved) : { scale: 1.0, excludeSoup: false };
+      const savedTheme = (localStorage.getItem('dietsnap_active_theme') as PersonaTheme) || 'seongsu';
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return { ...parsed, theme: parsed.theme || savedTheme };
+      }
+      return { scale: 1.0, excludeSoup: false, theme: savedTheme };
     } catch {
-      return { scale: 1.0, excludeSoup: false };
+      return { scale: 1.0, excludeSoup: false, theme: 'seongsu' };
     }
   });
 
@@ -217,6 +222,9 @@ export const App: React.FC = () => {
       }
       localStorage.setItem('dietsnap_current_data', JSON.stringify(nutrition));
       localStorage.setItem('dietsnap_current_portion', JSON.stringify(portion));
+      if (portion.theme) {
+        localStorage.setItem('dietsnap_active_theme', portion.theme);
+      }
     } catch (e) {
       console.warn('LocalStorage save failed', e);
     }
@@ -627,6 +635,17 @@ export const App: React.FC = () => {
           isPro={isPro}
           remainingCount={remainingCount}
           onOpenProModal={() => setIsProModalOpen(true)}
+          currentTheme={portion.theme || 'seongsu'}
+          onThemeChange={(newTheme) => {
+            handlePortionChange({
+              ...portion,
+              theme: newTheme,
+            });
+            const tMeta = getPersonaTheme(newTheme);
+            if (tMeta.defaultTemplate) {
+              setTemplate(tMeta.defaultTemplate);
+            }
+          }}
         />
       ) : currentView === 'gallery' ? (
         /* 2. 오식완 식단 갤러리 관리 페이지 */
@@ -839,31 +858,36 @@ export const App: React.FC = () => {
             </div>
 
             {/* 3단: 메인 빅 액션 버튼 [🚀 인스타 스토리 즉시 공유] & [다시 촬영] / [저장] */}
-            <div className="flex items-center gap-1.5 pt-0.5">
-              <button
-                onClick={handleTriggerCapture}
-                className="py-2.5 px-3 bg-neutral-850 hover:bg-neutral-800 text-neutral-300 rounded-xl font-bold text-xs flex items-center justify-center gap-1 border border-neutral-750 shrink-0 active:scale-95 transition"
-                title="다시 촬영"
-              >
-                <Camera className="w-4 h-4" />
-              </button>
+            {(() => {
+              const activeThemeMeta = getPersonaTheme(portion.theme || 'seongsu');
+              return (
+                <div className="flex items-center gap-1.5 pt-0.5">
+                  <button
+                    onClick={handleTriggerCapture}
+                    className="py-2.5 px-3 bg-neutral-850 hover:bg-neutral-800 text-neutral-300 rounded-xl font-bold text-xs flex items-center justify-center gap-1 border border-neutral-750 shrink-0 active:scale-95 transition"
+                    title="다시 촬영"
+                  >
+                    <Camera className="w-4 h-4" />
+                  </button>
 
-              <button
-                onClick={handleShare}
-                className="flex-1 py-3 px-3 bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500 hover:opacity-95 text-white rounded-xl font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-lg shadow-pink-500/20 active:scale-[0.98] transition whitespace-nowrap"
-              >
-                <Share2 className="w-4 h-4 shrink-0" />
-                <span>인스타 스토리 즉시 공유</span>
-              </button>
+                  <button
+                    onClick={handleShare}
+                    className={`flex-1 py-3 px-3 ${activeThemeMeta.shareBtnClass} hover:opacity-95 rounded-xl font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5 active:scale-[0.98] transition whitespace-nowrap`}
+                  >
+                    <Share2 className="w-4 h-4 shrink-0" />
+                    <span>인스타 스토리 즉시 공유</span>
+                  </button>
 
-              <button
-                onClick={handleDownload}
-                className="py-2.5 px-3 bg-neutral-850 hover:bg-neutral-800 text-neutral-300 rounded-xl font-bold text-xs flex items-center justify-center gap-1 border border-neutral-750 shrink-0 active:scale-95 transition"
-                title="고해상도 JPG 파일로 직접 저장"
-              >
-                <Download className="w-4 h-4" />
-              </button>
-            </div>
+                  <button
+                    onClick={handleDownload}
+                    className="py-2.5 px-3 bg-neutral-850 hover:bg-neutral-800 text-neutral-300 rounded-xl font-bold text-xs flex items-center justify-center gap-1 border border-neutral-750 shrink-0 active:scale-95 transition"
+                    title="고해상도 JPG 파일로 직접 저장"
+                  >
+                    <Download className="w-4 h-4" />
+                  </button>
+                </div>
+              );
+            })()}
           </div>
         </main>
       )}
