@@ -1,4 +1,4 @@
-import { TemplateRenderContext } from './templates/types';
+import { TemplateRenderContext, TEMPLATE_DEFINITIONS } from './templates/types';
 import { StampTemplate, StickerId } from '../types/diet';
 import { renderReceiptTemplate } from './templates/receipt';
 import { renderVintageTicketTemplate } from './templates/vintageTicket';
@@ -44,8 +44,8 @@ export function renderStampTemplate(options: MainCanvasRenderOptions): void {
 
   // 2. 인스타 감성 퀵 스티커 레이어 (활성화된 스티커가 있을 때)
   if (stickers && stickers.length > 0) {
-    // 템플릿별로 스티커가 돋보이는 Y위치 세팅
-    const stickerY = template === 'magazine' ? 210 : template === 'y2k' ? 120 : 80;
+    // 템플릿별 안전 여백(Safe Zone)에 맞춰 스티커 Y위치 자동 배치
+    const stickerY = TEMPLATE_DEFINITIONS[template]?.safeZoneTop ?? 80;
     drawStickers({
       ctx,
       canvasWidth,

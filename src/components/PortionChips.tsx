@@ -3,6 +3,7 @@ import { NutritionItem, PortionModifier, StampTemplate, AspectRatio, MealType, H
 import { Edit3, Sparkles, SlidersHorizontal, Sun, Moon, Sunrise, Coffee, Pizza, Crown, Tag } from 'lucide-react';
 import { EditNutritionModal } from './EditNutritionModal';
 import { STICKER_DEFINITIONS } from '../canvas/stickers/drawStickers';
+import { TEMPLATES_LIST } from '../canvas/templates/types';
 
 interface PortionChipsProps {
   portion: PortionModifier;
@@ -46,15 +47,6 @@ export const PortionChips: React.FC<PortionChipsProps> = ({
     { mode: 'cardio', label: '공복유산소각 💦' },
   ];
 
-  // 템플릿 목록 (총 6종으로 확장)
-  const templates: { id: StampTemplate; name: string; isPro?: boolean }[] = [
-    { id: 'receipt', name: '🧾 성수 영수증' },
-    { id: 'pink_receipt', name: '🌸 핑크 영수증', isPro: true },
-    { id: 'polaroid', name: '📷 폴라로이드' },
-    { id: 'vintage_ticket', name: '🎫 빈티지 티켓', isPro: true },
-    { id: 'magazine', name: '✨ 보그 매거진', isPro: true },
-    { id: 'y2k', name: '📼 Y2K 필름', isPro: true },
-  ];
 
   // 인스타 감성 퀵 스티커 리스트
   const availableStickers: StickerId[] = [
@@ -276,7 +268,7 @@ export const PortionChips: React.FC<PortionChipsProps> = ({
           </span>
         </div>
         <div className="grid grid-cols-3 gap-1.5">
-          {templates.map((tpl) => {
+          {TEMPLATES_LIST.map((tpl) => {
             const isSelected = template === tpl.id;
             return (
               <button
@@ -289,7 +281,7 @@ export const PortionChips: React.FC<PortionChipsProps> = ({
                     : 'bg-neutral-900/90 text-neutral-300 border-neutral-800 hover:bg-neutral-850'
                 }`}
               >
-                <span className="truncate">{tpl.name}</span>
+                <span className="truncate">{tpl.emoji} {tpl.name}</span>
                 {tpl.isPro && (
                   <span className="text-[8px] px-1 py-0.2 rounded bg-amber-400/20 text-amber-300 font-mono shrink-0">
                     PRO

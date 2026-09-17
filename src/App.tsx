@@ -3,6 +3,7 @@ import { NutritionItem, PortionModifier, StampTemplate, AspectRatio, PhotoTransf
 import { compressImage, CompressionResult } from './utils/compressImage';
 import { StampCanvas } from './components/StampCanvas';
 import { PortionChips } from './components/PortionChips';
+import { TEMPLATES_LIST } from './canvas/templates/types';
 import { IntroView, PresetItem } from './components/IntroView';
 import { GalleryView } from './components/GalleryView';
 import { 
@@ -679,14 +680,7 @@ export const App: React.FC = () => {
           <div className="w-full shrink-0 space-y-2 pt-1 pb-1">
             {/* 1단: 템플릿 6종 탭 (캔버스 바로 밑 밀착 배치) */}
             <div className="grid grid-cols-6 gap-0.5 bg-neutral-900/90 p-1 rounded-2xl border border-neutral-800/90 shadow-sm">
-              {[
-                { id: 'receipt' as StampTemplate, label: '🧾 영수증' },
-                { id: 'pink_receipt' as StampTemplate, label: '🌸 핑크', isPro: true },
-                { id: 'polaroid' as StampTemplate, label: '📷 폴라' },
-                { id: 'vintage_ticket' as StampTemplate, label: '🎫 티켓', isPro: true },
-                { id: 'magazine' as StampTemplate, label: '✨ 보그', isPro: true },
-                { id: 'y2k' as StampTemplate, label: '📼 Y2K', isPro: true },
-              ].map((tpl) => (
+              {TEMPLATES_LIST.map((tpl) => (
                 <button
                   key={tpl.id}
                   onClick={() => {
@@ -702,7 +696,7 @@ export const App: React.FC = () => {
                       : 'text-neutral-400 hover:text-white'
                   }`}
                 >
-                  <span className="truncate">{tpl.label}</span>
+                  <span className="truncate">{tpl.emoji} {tpl.shortName}</span>
                   {tpl.isPro && !isPro && <Crown className="w-2.5 h-2.5 text-amber-400 shrink-0" />}
                 </button>
               ))}

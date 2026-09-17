@@ -33,6 +33,7 @@ export const StampCanvas: React.FC<StampCanvasProps> = ({
   onCanvasReady,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const cachedImageRef = useRef<{ src: string; img: HTMLImageElement } | null>(null);
 
   // 줌 & 이동 상태 (transform prop 우선, 없으면 로컬/offsetY 연동)
   const currentZoom = transform?.zoom ?? 1.0;
@@ -262,11 +263,24 @@ export const StampCanvas: React.FC<StampCanvasProps> = ({
     };
 
     if (imageSrc) {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => render(img);
-      img.src = imageSrc;
+      // 🚀 인메모리 캐시 히트: 드래그/줌/보정 조작 시 동일 이미지면 0초 즉시 렌더링 (60fps 보장)
+      if (
+        cachedImageRef.current &&
+        cachedImageRef.current.src === imageSrc &&
+        cachedImageRef.current.img.complete
+      ) {
+        render(cachedImageRef.current.img);
+      } else {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          cachedImageRef.current = { src: imageSrc, img };
+          render(img);
+        };
+        img.src = imageSrc;
+      }
     } else {
+      cachedImageRef.current = null;
       render();
     }
   }, [
