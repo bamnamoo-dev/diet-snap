@@ -48,7 +48,7 @@ export const PortionChips: React.FC<PortionChipsProps> = ({
   ];
 
 
-  // 인스타 감성 퀵 스티커 리스트
+  // 인스타 감성 퀵 스티커 리스트 (6종 기본 + 마스코트 듀오 2종)
   const availableStickers: StickerId[] = [
     'today_done',
     'clean_diet',
@@ -56,6 +56,8 @@ export const PortionChips: React.FC<PortionChipsProps> = ({
     'high_protein',
     'fasting',
     'no_sugar',
+    'snappy_cheer',
+    'buddy_walk',
   ];
 
   const handleToggleSticker = (id: StickerId) => {
@@ -302,7 +304,7 @@ export const PortionChips: React.FC<PortionChipsProps> = ({
           </span>
           <span className="text-neutral-500 text-[10px]">다중 선택 가능</span>
         </div>
-        <div className="grid grid-cols-3 gap-1.5">
+        <div className="grid grid-cols-4 gap-1">
           {availableStickers.map((id) => {
             const meta = STICKER_DEFINITIONS[id];
             const isChecked = (portion.stickers || []).includes(id);
@@ -311,7 +313,7 @@ export const PortionChips: React.FC<PortionChipsProps> = ({
                 key={id}
                 type="button"
                 onClick={() => handleToggleSticker(id)}
-                className={`py-1.5 px-1.5 rounded-xl text-xs font-bold border transition-all active:scale-95 flex items-center justify-center gap-1 whitespace-nowrap ${
+                className={`py-1.5 px-1 rounded-xl text-[11px] font-bold border transition-all active:scale-95 flex items-center justify-center gap-0.5 whitespace-nowrap ${
                   isChecked
                     ? 'bg-neutral-800 text-white border-rose-500 shadow-md ring-1 ring-rose-500/50'
                     : 'bg-neutral-900/90 text-neutral-400 border-neutral-800 hover:text-neutral-200'

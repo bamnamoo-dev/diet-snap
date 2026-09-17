@@ -66,6 +66,22 @@ export const STICKER_DEFINITIONS: Record<StickerId, StickerMeta> = {
     textColor: '#ffffff',
     borderColor: '#ffffff',
   },
+  snappy_cheer: {
+    id: 'snappy_cheer',
+    label: '0kcal다냥',
+    emoji: '🐱',
+    bgColor: '#f43f5e',
+    textColor: '#ffffff',
+    borderColor: '#ffe4e6',
+  },
+  buddy_walk: {
+    id: 'buddy_walk',
+    label: '산책가자멍',
+    emoji: '🐶',
+    bgColor: '#f59e0b',
+    textColor: '#ffffff',
+    borderColor: '#fef3c7',
+  },
 };
 
 /**

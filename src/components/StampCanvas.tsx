@@ -108,6 +108,8 @@ export const StampCanvas: React.FC<StampCanvasProps> = ({
         ? '#faf4e8' 
         : template === 'y2k'
         ? '#05070c'
+        : template === 'kitsch_diary'
+        ? '#fefbf3'
         : '#141416';
       ctx.fillRect(0, 0, targetWidth, targetHeight);
 
@@ -123,15 +125,17 @@ export const StampCanvas: React.FC<StampCanvasProps> = ({
 
         const bottomMargin = aspectRatio === '9:16' ? 560 : 400;
 
-        if (template === 'polaroid') {
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(0, 0, targetWidth, targetHeight);
-
-          const framePad = 48;
+        if (template === 'polaroid' || template === 'kitsch_diary') {
+          const framePad = template === 'kitsch_diary' ? 44 : 48;
           drawX = framePad;
-          drawY = framePad;
+          drawY = template === 'kitsch_diary' ? 95 : framePad;
           drawW = targetWidth - framePad * 2;
-          drawH = targetHeight - bottomMargin - framePad;
+          drawH = targetHeight - bottomMargin - drawY + (template === 'kitsch_diary' ? 10 : 0);
+
+          if (template === 'polaroid') {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, targetWidth, targetHeight);
+          }
         }
 
         const isLandscape = imgW > imgH;
@@ -140,11 +144,15 @@ export const StampCanvas: React.FC<StampCanvasProps> = ({
         let renderW = drawW;
         let renderH = drawH;
 
-        if (template === 'polaroid') {
-          // 폴라로이드 프레임 내 안착 및 자르기(Clip)
+        if (template === 'polaroid' || template === 'kitsch_diary') {
+          // 폴라로이드 & 키치 다이어리: 프레임 내 안착 및 자르기(Clip)
           ctx.save();
           ctx.beginPath();
-          ctx.rect(drawX, drawY, drawW, drawH);
+          if (template === 'kitsch_diary') {
+            ctx.roundRect(drawX, drawY, drawW, drawH, 24);
+          } else {
+            ctx.rect(drawX, drawY, drawW, drawH);
+          }
           ctx.clip();
 
           const centerX = drawX + drawW / 2;

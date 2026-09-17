@@ -78,6 +78,14 @@ export const TEMPLATE_DEFINITIONS: Record<StampTemplate, TemplateMeta> = {
     isPro: true,
     safeZoneTop: 120, // 레트로 REC OSD 아래로 여백 확보
   },
+  kitsch_diary: {
+    id: 'kitsch_diary',
+    name: '키치 다이어리',
+    shortName: '다이어리',
+    emoji: '🧸',
+    isPro: true,
+    safeZoneTop: 90, // 상단 다이어리 헤더 아래로 여백 확보
+  },
 };
 
 export const TEMPLATES_LIST: TemplateMeta[] = [
@@ -87,4 +95,5 @@ export const TEMPLATES_LIST: TemplateMeta[] = [
   TEMPLATE_DEFINITIONS.vintage_ticket,
   TEMPLATE_DEFINITIONS.magazine,
   TEMPLATE_DEFINITIONS.y2k,
+  TEMPLATE_DEFINITIONS.kitsch_diary,
 ];

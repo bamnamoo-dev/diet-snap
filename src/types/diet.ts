@@ -31,10 +31,18 @@ export interface PortionModifier {
   stickers?: StickerId[]; // 인스타 감성 퀵 스티커 (다중 선택 가능)
 }
 
-export type StampTemplate = 'receipt' | 'polaroid' | 'pink_receipt' | 'vintage_ticket' | 'magazine' | 'y2k';
+export type StampTemplate = 'receipt' | 'polaroid' | 'pink_receipt' | 'vintage_ticket' | 'magazine' | 'y2k' | 'kitsch_diary';
 export type AspectRatio = '9:16' | '1:1';
 
-export type StickerId = 'today_done' | 'clean_diet' | 'cheating_day' | 'high_protein' | 'fasting' | 'no_sugar';
+export type StickerId = 
+  | 'today_done' 
+  | 'clean_diet' 
+  | 'cheating_day' 
+  | 'high_protein' 
+  | 'fasting' 
+  | 'no_sugar'
+  | 'snappy_cheer'
+  | 'buddy_walk';
 
 export interface StickerItem {
   id: StickerId;

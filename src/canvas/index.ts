@@ -5,6 +5,7 @@ import { renderVintageTicketTemplate } from './templates/vintageTicket';
 import { renderPolaroidTemplate } from './templates/polaroid';
 import { renderMagazineTemplate } from './templates/magazine';
 import { renderY2kTemplate } from './templates/y2k';
+import { renderKitschDiaryTemplate } from './templates/kitschDiary';
 import { drawStickers } from './stickers/drawStickers';
 
 export interface MainCanvasRenderOptions extends TemplateRenderContext {
@@ -37,6 +38,9 @@ export function renderStampTemplate(options: MainCanvasRenderOptions): void {
       break;
     case 'y2k':
       renderY2kTemplate(options);
+      break;
+    case 'kitsch_diary':
+      renderKitschDiaryTemplate(options);
       break;
     default:
       renderReceiptTemplate({ ...options, isPink: false });
@@ -82,6 +86,8 @@ export function renderWatermark(
     ctx.fillStyle = 'rgba(100, 116, 139, 0.65)';
   } else if (template === 'y2k') {
     ctx.fillStyle = 'rgba(34, 197, 94, 0.65)';
+  } else if (template === 'kitsch_diary') {
+    ctx.fillStyle = 'rgba(219, 39, 119, 0.55)';
   } else {
     ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
   }
