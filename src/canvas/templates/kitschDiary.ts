@@ -162,28 +162,7 @@ export function renderKitschDiaryTemplate({
   const bottomMargin = aspectRatio === '9:16' ? 560 : 400;
   const bottomY = height - bottomMargin;
 
-  // 1. 배경: 연한 버터크림 모눈종이 (#fefcf7)
-  ctx.fillStyle = '#fefbf3';
-  ctx.fillRect(0, 0, width, height);
-
-  // 모눈종이 그리드 패턴 렌더링
-  ctx.strokeStyle = '#f1e7d0';
-  ctx.lineWidth = 1;
-  const gridSize = 40;
-  for (let x = 0; x < width; x += gridSize) {
-    ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, height);
-    ctx.stroke();
-  }
-  for (let y = 0; y < height; y += gridSize) {
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(width, y);
-    ctx.stroke();
-  }
-
-  // 2. 상단 와시 테이프 & 헤더 뱃지
+  // 1. 상단 와시 테이프 & 헤더 뱃지
   drawWashiTape(ctx, 40, 30, 140, 36, '#fbcfe8', -0.05); // 핑크 테이프
   drawWashiTape(ctx, width - 180, 30, 140, 36, '#fed7aa', 0.04); // 피치 테이프
 

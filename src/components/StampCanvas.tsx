@@ -113,6 +113,25 @@ export const StampCanvas: React.FC<StampCanvasProps> = ({
         : '#141416';
       ctx.fillRect(0, 0, targetWidth, targetHeight);
 
+      if (template === 'kitsch_diary') {
+        // 모눈종이 그리드 패턴
+        ctx.strokeStyle = '#f1e7d0';
+        ctx.lineWidth = 1;
+        const gridSize = 40;
+        for (let x = 0; x < targetWidth; x += gridSize) {
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, targetHeight);
+          ctx.stroke();
+        }
+        for (let y = 0; y < targetHeight; y += gridSize) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(targetWidth, y);
+          ctx.stroke();
+        }
+      }
+
       // 2. 유저 음식 사진 렌더링 (줌 & 팬 적용)
       if (imgElement && imgElement.complete && imgElement.naturalWidth > 0) {
         const imgW = imgElement.naturalWidth;
@@ -135,6 +154,17 @@ export const StampCanvas: React.FC<StampCanvasProps> = ({
           if (template === 'polaroid') {
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, targetWidth, targetHeight);
+          } else if (template === 'kitsch_diary') {
+            // 키치 다이어리: 음식 사진 뒤 흰색 폴라로이드 카드 & 그림자
+            ctx.save();
+            ctx.shadowColor = 'rgba(180, 140, 100, 0.22)';
+            ctx.shadowBlur = 20;
+            ctx.shadowOffsetY = 8;
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.roundRect(drawX - 12, drawY - 12, drawW + 24, drawH + 24, 28);
+            ctx.fill();
+            ctx.restore();
           }
         }
 
@@ -193,8 +223,8 @@ export const StampCanvas: React.FC<StampCanvasProps> = ({
           ctx.drawImage(imgElement, renderX, renderY, renderW, renderH);
         }
 
-        // 사진 위 그라디언트 비네팅 (폴라로이드 및 Y2K 제외)
-        if (template !== 'polaroid' && template !== 'y2k') {
+        // 사진 위 그라디언트 비네팅 (폴라로이드, Y2K 및 키치 다이어리 제외)
+        if (template !== 'polaroid' && template !== 'y2k' && template !== 'kitsch_diary') {
           const gradient = ctx.createLinearGradient(0, targetHeight * 0.3, 0, targetHeight);
           gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
           gradient.addColorStop(0.5, 'rgba(0, 0, 0, 0.4)');
