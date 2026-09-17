@@ -1,4 +1,4 @@
-import { NutritionItem, PortionModifier, AspectRatio, PhotoTransform, StampTemplate } from '../../types/diet';
+import { NutritionItem, PortionModifier, AspectRatio, PhotoTransform, StampTemplate, PersonaTheme } from '../../types/diet';
 
 export interface TemplateRenderContext {
   ctx: CanvasRenderingContext2D;
@@ -10,6 +10,8 @@ export interface TemplateRenderContext {
   portion: PortionModifier;
   transform?: PhotoTransform;
   isPro?: boolean;
+  theme?: PersonaTheme;
+  themedComment?: string;
   displayCaloriesText: string;
   caloriesUnitText: string;
   humorTopBadge: string;

@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { NutritionItem, PortionModifier, StampTemplate, AspectRatio, PhotoTransform } from '../types/diet';
 import { ZoomIn, ZoomOut, RotateCcw, Move } from 'lucide-react';
 import { renderStampTemplate } from '../canvas';
+import { getThemedComment } from '../canvas/themes/themeHelper';
 
 interface StampCanvasProps {
   imageSrc: string | null;
@@ -242,6 +243,14 @@ export const StampCanvas: React.FC<StampCanvasProps> = ({
       }
 
       // 3. 모듈화된 템플릿 & 스티커 레이어 합성
+      const currentTheme = portion.theme || 'seongsu';
+      const themedComment = getThemedComment(
+        nutrition.diet_comment,
+        currentTheme,
+        portion.mealType,
+        nutrition.calories * portion.scale
+      );
+
       renderStampTemplate({
         ctx,
         canvasWidth: targetWidth,
@@ -253,6 +262,8 @@ export const StampCanvas: React.FC<StampCanvasProps> = ({
         transform,
         isPro,
         template,
+        theme: currentTheme,
+        themedComment,
         stickers: portion.stickers,
         displayCaloriesText,
         caloriesUnitText,

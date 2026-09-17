@@ -1,4 +1,4 @@
-import { StickerId } from '../../types/diet';
+import { StickerId, PersonaTheme } from '../../types/diet';
 
 export interface StickerRenderContext {
   ctx: CanvasRenderingContext2D;
@@ -18,54 +18,57 @@ export interface StickerMeta {
 }
 
 export const STICKER_DEFINITIONS: Record<StickerId, StickerMeta> = {
+  // 🖤 1. 성수동 시크 힙스터 스티커 팩 (6종)
   today_done: {
     id: 'today_done',
     label: '오식완',
     emoji: '⭕',
-    bgColor: '#ef4444',
+    bgColor: '#18181b',
     textColor: '#ffffff',
-    borderColor: '#ffffff',
+    borderColor: '#3f3f46',
   },
   clean_diet: {
     id: 'clean_diet',
     label: '클린식단',
     emoji: '🥗',
-    bgColor: '#10b981',
+    bgColor: '#059669',
     textColor: '#ffffff',
-    borderColor: '#ffffff',
+    borderColor: '#34d399',
   },
   cheating_day: {
     id: 'cheating_day',
     label: '치팅데이',
     emoji: '🍕',
-    bgColor: '#f59e0b',
+    bgColor: '#d97706',
     textColor: '#ffffff',
-    borderColor: '#ffffff',
+    borderColor: '#fcd34d',
   },
   high_protein: {
     id: 'high_protein',
     label: '단백질 30g+',
     emoji: '🥩',
-    bgColor: '#6366f1',
+    bgColor: '#4f46e5',
     textColor: '#ffffff',
-    borderColor: '#ffffff',
+    borderColor: '#a5b4fc',
   },
   fasting: {
     id: 'fasting',
     label: '간헐적단식',
     emoji: '⏳',
-    bgColor: '#06b6d4',
+    bgColor: '#0891b2',
     textColor: '#ffffff',
-    borderColor: '#ffffff',
+    borderColor: '#67e8f9',
   },
   no_sugar: {
     id: 'no_sugar',
     label: 'No Sugar',
     emoji: '🚫',
-    bgColor: '#ec4899',
+    bgColor: '#db2777',
     textColor: '#ffffff',
-    borderColor: '#ffffff',
+    borderColor: '#f472b6',
   },
+
+  // 🐱 2. 뚱냥이(스내피) 힐링 스티커 팩 (6종)
   snappy_cheer: {
     id: 'snappy_cheer',
     label: '0kcal다냥',
@@ -74,6 +77,48 @@ export const STICKER_DEFINITIONS: Record<StickerId, StickerMeta> = {
     textColor: '#ffffff',
     borderColor: '#ffe4e6',
   },
+  snappy_cheat: {
+    id: 'snappy_cheat',
+    label: '치팅합법',
+    emoji: '🍕',
+    bgColor: '#fb7185',
+    textColor: '#ffffff',
+    borderColor: '#ffffff',
+  },
+  snappy_clean: {
+    id: 'snappy_clean',
+    label: '집사기특해',
+    emoji: '🥗',
+    bgColor: '#ec4899',
+    textColor: '#ffffff',
+    borderColor: '#fbcfe8',
+  },
+  snappy_tomorrow: {
+    id: 'snappy_tomorrow',
+    label: '내일부터다',
+    emoji: '🤫',
+    bgColor: '#a855f7',
+    textColor: '#ffffff',
+    borderColor: '#f3e8ff',
+  },
+  snappy_protein: {
+    id: 'snappy_protein',
+    label: '단백질냥냥',
+    emoji: '🥩',
+    bgColor: '#e11d48',
+    textColor: '#ffffff',
+    borderColor: '#ffe4e6',
+  },
+  snappy_full: {
+    id: 'snappy_full',
+    label: '배부르다냥',
+    emoji: '💤',
+    bgColor: '#f472b6',
+    textColor: '#ffffff',
+    borderColor: '#ffffff',
+  },
+
+  // 🐶 3. 댕댕이(버디) 갓생 스티커 팩 (6종)
   buddy_walk: {
     id: 'buddy_walk',
     label: '산책가자멍',
@@ -82,6 +127,55 @@ export const STICKER_DEFINITIONS: Record<StickerId, StickerMeta> = {
     textColor: '#ffffff',
     borderColor: '#fef3c7',
   },
+  buddy_attendance: {
+    id: 'buddy_attendance',
+    label: '갓생출석멍',
+    emoji: '🐾',
+    bgColor: '#ea580c',
+    textColor: '#ffffff',
+    borderColor: '#ffedd5',
+  },
+  buddy_protein: {
+    id: 'buddy_protein',
+    label: '단백질파워',
+    emoji: '🥩',
+    bgColor: '#d97706',
+    textColor: '#ffffff',
+    borderColor: '#fef3c7',
+  },
+  buddy_water: {
+    id: 'buddy_water',
+    label: '물2L클리어',
+    emoji: '💧',
+    bgColor: '#0284c7',
+    textColor: '#ffffff',
+    borderColor: '#bae6fd',
+  },
+  buddy_tail: {
+    id: 'buddy_tail',
+    label: '꼬리콥터붕',
+    emoji: '🐕',
+    bgColor: '#ca8a04',
+    textColor: '#ffffff',
+    borderColor: '#fef9c3',
+  },
+  buddy_cardio: {
+    id: 'buddy_cardio',
+    label: '유산소출발',
+    emoji: '🏃',
+    bgColor: '#16a34a',
+    textColor: '#ffffff',
+    borderColor: '#bbf7d0',
+  },
+};
+
+/**
+ * 테마별 전용 스티커 팩 매핑 (SSOT)
+ */
+export const THEME_STICKERS_MAP: Record<PersonaTheme, StickerId[]> = {
+  seongsu: ['today_done', 'clean_diet', 'cheating_day', 'high_protein', 'fasting', 'no_sugar'],
+  snappy: ['snappy_cheer', 'snappy_cheat', 'snappy_clean', 'snappy_tomorrow', 'snappy_protein', 'snappy_full'],
+  buddy: ['buddy_walk', 'buddy_attendance', 'buddy_protein', 'buddy_water', 'buddy_tail', 'buddy_cardio'],
 };
 
 /**

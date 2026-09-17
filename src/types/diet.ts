@@ -21,6 +21,8 @@ export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'cheating';
 export type HumorMode = 'none' | 'zero_cal' | 'cheating' | 'cardio';
 export type UserPlan = 'free' | 'pro';
 
+export type PersonaTheme = 'seongsu' | 'snappy' | 'buddy';
+
 export interface PortionModifier {
   scale: number;        // 소(0.8), 보통(1.0), 곱빼기(1.3)
   excludeSoup: boolean; // 국물 제외 여부 (-15% 칼로리/나트륨)
@@ -29,20 +31,34 @@ export interface PortionModifier {
   humorMode?: HumorMode; // 유머 스탬프 모드 ('none', 'zero_cal', 'cheating', 'cardio')
   dDay?: number;        // Day N (디데이)
   stickers?: StickerId[]; // 인스타 감성 퀵 스티커 (다중 선택 가능)
+  theme?: PersonaTheme; // 3대 페르소나 테마 ('seongsu' | 'snappy' | 'buddy')
 }
 
 export type StampTemplate = 'receipt' | 'polaroid' | 'pink_receipt' | 'vintage_ticket' | 'magazine' | 'y2k' | 'kitsch_diary';
 export type AspectRatio = '9:16' | '1:1';
 
 export type StickerId = 
+  // 🖤 성수동 테마 스티커
   | 'today_done' 
   | 'clean_diet' 
   | 'cheating_day' 
   | 'high_protein' 
   | 'fasting' 
   | 'no_sugar'
+  // 🐱 뚱냥이(스내피) 테마 스티커
   | 'snappy_cheer'
-  | 'buddy_walk';
+  | 'snappy_cheat'
+  | 'snappy_clean'
+  | 'snappy_tomorrow'
+  | 'snappy_protein'
+  | 'snappy_full'
+  // 🐶 댕댕이(버디) 테마 스티커
+  | 'buddy_walk'
+  | 'buddy_attendance'
+  | 'buddy_protein'
+  | 'buddy_water'
+  | 'buddy_tail'
+  | 'buddy_cardio';
 
 export interface StickerItem {
   id: StickerId;

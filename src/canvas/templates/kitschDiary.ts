@@ -1,4 +1,5 @@
 import { TemplateRenderContext } from './types';
+import { renderPersonaStamp } from '../stickers/drawThemeStamps';
 
 /**
  * 와시 테이프 (마스킹 테이프) 렌더링 헬퍼
@@ -147,6 +148,7 @@ export function renderKitschDiaryTemplate({
   aspectRatio,
   nutrition,
   portion,
+  themedComment,
   displayCaloriesText,
   caloriesUnitText,
   mealLabel,
@@ -293,7 +295,8 @@ export function renderKitschDiaryTemplate({
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
 
-  const commentWords = `“ ${nutrition.diet_comment} ”`.split(' ');
+  const commentText = themedComment || nutrition.diet_comment;
+  const commentWords = `“ ${commentText} ”`.split(' ');
   const commentLines: string[] = [];
   let curComment = '';
   for (let n = 0; n < commentWords.length; n++) {
@@ -322,13 +325,9 @@ export function renderKitschDiaryTemplate({
   drawPastelMacroChip(ctx, cardX + 28 + chipW + 14, chipY, chipW, chipH, '단백질', `${displayProtein}g`, '#f0fdf4', '#bbf7d0', '#16a34a', '🍗');
   drawPastelMacroChip(ctx, cardX + 28 + (chipW + 14) * 2, chipY, chipW, chipH, '지방', `${displayFat}g`, '#fff7ed', '#fed7aa', '#ea580c', '🥑');
 
-  // 8. 🐱 스내피 & 🐶 버디 공식 마스코트 도장 렌더링!
-  // 치팅이면 스내피(0kcal) 도장, 클린/정상이면 버디(갓생완료) 도장 자동 분기 또는 조화로운 배치
-  if (portion.mealType === 'cheating' || nutrition.calories >= 700) {
-    drawSnappyStamp(ctx, cardX + cardW - 75, cardY - 45);
-  } else {
-    drawBuddyStamp(ctx, cardX + cardW - 75, cardY - 45);
-  }
+  // 8. 3대 페르소나 테마 시그니처 도장 렌더링
+  const activeTheme = portion.theme || (portion.mealType === 'cheating' ? 'snappy' : 'buddy');
+  renderPersonaStamp(ctx, cardX + cardW - 75, cardY - 45, activeTheme);
 
   ctx.restore();
 }

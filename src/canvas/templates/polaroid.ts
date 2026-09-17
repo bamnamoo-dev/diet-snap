@@ -1,4 +1,5 @@
 import { TemplateRenderContext } from './types';
+import { renderPersonaStamp } from '../stickers/drawThemeStamps';
 
 function drawHighContrastChip(
   ctx: CanvasRenderingContext2D,
@@ -39,6 +40,7 @@ export function renderPolaroidTemplate({
   aspectRatio,
   nutrition,
   portion,
+  themedComment,
   displayCaloriesText,
   caloriesUnitText,
   mealLabel,
@@ -111,7 +113,8 @@ export function renderPolaroidTemplate({
   ctx.font = '700 26px "Noto Sans KR", sans-serif';
   ctx.textAlign = 'left';
 
-  const commentWords = `“ ${nutrition.diet_comment} ”`.split(' ');
+  const commentText = themedComment || nutrition.diet_comment;
+  const commentWords = `“ ${commentText} ”`.split(' ');
   const commentLines: string[] = [];
   let curComment = '';
   for (let n = 0; n < commentWords.length; n++) {
@@ -130,6 +133,11 @@ export function renderPolaroidTemplate({
   commentLines.slice(0, 2).forEach((line, idx) => {
     ctx.fillText(line, 82, commentY + 34 + idx * 32);
   });
+
+  // 테마 전용 시그니처 도장 (스내피 or 버디)
+  if (portion.theme === 'snappy' || portion.theme === 'buddy') {
+    renderPersonaStamp(ctx, width - 110, bottomY + 50, portion.theme, 0.85);
+  }
 
   // 탄단지 매크로
   const chipY = commentY + 100;

@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { NutritionItem, PortionModifier, StampTemplate, AspectRatio, PhotoTransform, MealType } from './types/diet';
+import { NutritionItem, PortionModifier, StampTemplate, AspectRatio, PhotoTransform, MealType, PersonaTheme, StickerId } from './types/diet';
 import { compressImage, CompressionResult } from './utils/compressImage';
 import { StampCanvas } from './components/StampCanvas';
 import { PortionChips } from './components/PortionChips';
 import { TEMPLATES_LIST } from './canvas/templates/types';
+import { PERSONA_THEMES_LIST } from './canvas/themes/themeHelper';
+import { THEME_STICKERS_MAP, STICKER_DEFINITIONS } from './canvas/stickers/drawStickers';
 import { IntroView, PresetItem } from './components/IntroView';
 import { GalleryView } from './components/GalleryView';
 import { 
@@ -677,9 +679,43 @@ export const App: React.FC = () => {
           </div>
 
           {/* 하단 통합 컨트롤러 바 (스크롤 0초 인터랙션) */}
-          <div className="w-full shrink-0 space-y-2 pt-1 pb-1">
-            {/* 1단: 템플릿 6종 탭 (캔버스 바로 밑 밀착 배치) */}
-            <div className="grid grid-cols-6 gap-0.5 bg-neutral-900/90 p-1 rounded-2xl border border-neutral-800/90 shadow-sm">
+          <div className="w-full shrink-0 space-y-1.5 pt-1 pb-1">
+            {/* 0단: 3대 페르소나 테마 선택 바 (🖤 성수동 | 🐱 뚱냥이 | 🐶 댕댕이) */}
+            <div className="grid grid-cols-3 gap-1 bg-neutral-900/95 p-1 rounded-2xl border border-neutral-800 shadow-sm">
+              {PERSONA_THEMES_LIST.map((th) => {
+                const isActive = (portion.theme || 'seongsu') === th.id;
+                return (
+                  <button
+                    key={th.id}
+                    type="button"
+                    onClick={() => {
+                      handlePortionChange({
+                        ...portion,
+                        theme: th.id,
+                      });
+                      if (th.defaultTemplate) {
+                        setTemplate(th.defaultTemplate);
+                      }
+                    }}
+                    className={`py-1.5 px-1.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1 active:scale-95 whitespace-nowrap ${
+                      isActive
+                        ? th.id === 'snappy'
+                          ? 'bg-rose-500 text-white shadow-md shadow-rose-500/25 ring-1 ring-rose-400/50'
+                          : th.id === 'buddy'
+                          ? 'bg-amber-500 text-neutral-950 shadow-md shadow-amber-500/25 ring-1 ring-amber-400/50'
+                          : 'bg-neutral-100 text-neutral-950 shadow-md ring-1 ring-white/50'
+                        : 'text-neutral-400 hover:text-neutral-200'
+                    }`}
+                  >
+                    <span>{th.emoji}</span>
+                    <span className="truncate">{th.shortName} 테마</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* 1단: 템플릿 7종 탭 (캔버스 바로 밑 밀착 배치) */}
+            <div className="grid grid-cols-7 gap-0.5 bg-neutral-900/90 p-1 rounded-2xl border border-neutral-800/90 shadow-sm">
               {TEMPLATES_LIST.map((tpl) => (
                 <button
                   key={tpl.id}
@@ -690,7 +726,7 @@ export const App: React.FC = () => {
                     }
                     setTemplate(tpl.id);
                   }}
-                  className={`py-2 px-0.5 text-[10.5px] font-bold rounded-xl transition active:scale-95 flex items-center justify-center gap-0.5 whitespace-nowrap ${
+                  className={`py-1.5 px-0.5 text-[10px] font-bold rounded-xl transition active:scale-95 flex items-center justify-center gap-0.5 whitespace-nowrap ${
                     template === tpl.id
                       ? 'bg-neutral-100 text-neutral-950 shadow-sm'
                       : 'text-neutral-400 hover:text-white'
@@ -702,7 +738,7 @@ export const App: React.FC = () => {
               ))}
             </div>
 
-            {/* 2단: 끼니 분류 (아침/점심/저녁/간식) & 1초 양 보정 & 수치/끼니 직접 수정 (한 줄 콤팩트 바) */}
+            {/* 2단: 끼니 분류 (아침/점심/저녁/간식) & 1초 양 보정 & 테마별 퀵 스티커 */}
             <div className="flex items-center justify-between gap-1.5 px-0.5">
               {/* 끼니 & 양 보정 퀵 칩 스크롤러 */}
               <div className="flex items-center gap-1 overflow-x-auto no-scrollbar flex-1">
@@ -767,28 +803,27 @@ export const App: React.FC = () => {
 
                 <span className="w-px h-3.5 bg-neutral-800 shrink-0 mx-0.5" />
 
-                {/* 퀵 인스타 스티커 토글 */}
-                {[
-                  { id: 'today_done' as const, label: '오식완 ⭕' },
-                  { id: 'clean_diet' as const, label: '클린 🥗' },
-                  { id: 'high_protein' as const, label: '단백 🥩' },
-                ].map((st) => {
-                  const isChecked = (portion.stickers || []).includes(st.id);
+                {/* 활성 테마 맞춤 퀵 스티커 (테마별 대표 3종 노출) */}
+                {(THEME_STICKERS_MAP[portion.theme || 'seongsu'] || THEME_STICKERS_MAP.seongsu).slice(0, 3).map((sId) => {
+                  const sMeta = STICKER_DEFINITIONS[sId];
+                  if (!sMeta) return null;
+                  const isChecked = (portion.stickers || []).includes(sId);
                   return (
                     <button
-                      key={st.id}
+                      key={sId}
                       onClick={() => {
                         const cur = portion.stickers || [];
-                        const next = isChecked ? cur.filter((s) => s !== st.id) : [...cur, st.id];
+                        const next = isChecked ? cur.filter((s) => s !== sId) : [...cur, sId];
                         handlePortionChange({ ...portion, stickers: next });
                       }}
-                      className={`py-1 px-2 rounded-lg text-[10px] font-bold whitespace-nowrap border transition active:scale-95 ${
+                      className={`py-1 px-2 rounded-lg text-[10px] font-bold whitespace-nowrap border transition active:scale-95 flex items-center gap-0.5 ${
                         isChecked
-                          ? 'bg-rose-600 text-white border-rose-400 shadow-sm'
+                          ? (portion.theme === 'snappy' ? 'bg-rose-500 text-white border-rose-400 shadow-sm' : portion.theme === 'buddy' ? 'bg-amber-500 text-neutral-950 border-amber-400 shadow-sm' : 'bg-neutral-100 text-neutral-950 border-white shadow-sm')
                           : 'bg-neutral-900 text-neutral-400 border-neutral-800 hover:text-neutral-200'
                       }`}
                     >
-                      {st.label}
+                      <span>{sMeta.emoji}</span>
+                      <span>{sMeta.label}</span>
                     </button>
                   );
                 })}

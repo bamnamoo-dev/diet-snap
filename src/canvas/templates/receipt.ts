@@ -1,5 +1,6 @@
 import { TemplateRenderContext } from './types';
 import { drawBarcode } from '../core/drawBarcode';
+import { renderPersonaStamp } from '../stickers/drawThemeStamps';
 
 export interface ReceiptTemplateOptions extends TemplateRenderContext {
   isPink?: boolean;
@@ -11,11 +12,10 @@ export function renderReceiptTemplate({
   canvasHeight,
   nutrition,
   portion,
+  themedComment,
   displayCaloriesText,
   caloriesUnitText,
   humorTopBadge,
-  mealLabel,
-  dDayLabel,
   displayCarbs,
   displayProtein,
   displayFat,
@@ -23,70 +23,64 @@ export function renderReceiptTemplate({
 }: ReceiptTemplateOptions): void {
   ctx.save();
 
-  const width = canvasWidth;
-  const height = canvasHeight;
-  const cardMarginX = 64;
-  const cardWidth = width - cardMarginX * 2;
-  const cardHeight = height > 1400 ? 780 : 560;
-  const cardY = height - cardHeight - 80;
+  const cardMarginX = 54;
+  const cardWidth = canvasWidth - cardMarginX * 2;
+  const cardHeight = 650;
+  const cardY = canvasHeight - cardHeight - 40;
 
-  // 카드 그림자 & 배경
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
-  ctx.shadowBlur = 40;
-  ctx.shadowOffsetY = 15;
-
-  ctx.fillStyle = isPink ? 'rgba(255, 240, 245, 0.96)' : 'rgba(255, 255, 255, 0.96)';
-  ctx.beginPath();
-  ctx.roundRect(cardMarginX, cardY, cardWidth, cardHeight, 24);
-  ctx.fill();
-
-  ctx.shadowColor = 'transparent';
-  ctx.shadowBlur = 0;
-  ctx.shadowOffsetY = 0;
-
-  // 영수증 상단 점선
+  // 1. 아크릴 감성 영수증 종이 (성수동 감성 고대비 라벨)
+  ctx.fillStyle = isPink ? '#fdf2f4' : '#ffffff';
   ctx.strokeStyle = isPink ? '#fbcfe8' : '#e4e4e7';
   ctx.lineWidth = 3;
-  ctx.setLineDash([8, 8]);
+
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+  ctx.shadowBlur = 24;
+  ctx.shadowOffsetY = 12;
+
   ctx.beginPath();
-  ctx.moveTo(cardMarginX + 32, cardY + 92);
-  ctx.lineTo(cardMarginX + cardWidth - 32, cardY + 92);
+  ctx.roundRect(cardMarginX, cardY, cardWidth, cardHeight, 28);
+  ctx.fill();
   ctx.stroke();
 
-  // 상단 타이틀 & D-Day / 끼니 뱃지
-  const headerTitle = isPink ? 'SEONGSU PINK DIET' : 'DIET RECEIPT';
-  ctx.fillStyle = isPink ? '#9d174d' : '#18181b';
-  ctx.font = '800 32px "Space Mono", monospace';
-  ctx.textAlign = 'left';
-  ctx.fillText(headerTitle, cardMarginX + 40, cardY + 62);
+  ctx.shadowColor = 'transparent';
 
-  // 날짜 & D-Day / 끼니
+  // 2. 상단 헤더
+  ctx.fillStyle = isPink ? '#db2777' : '#18181b';
+  ctx.font = '900 24px "Space Mono", monospace';
+  ctx.textAlign = 'left';
+  const brandTitle = isPink ? 'DIETSNAP PINK LABEL' : 'DIETSNAP SEONGSU STORE';
+  ctx.fillText(brandTitle, cardMarginX + 40, cardY + 60);
+
   const now = new Date();
   const dateStr = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`;
-  const badgeText = [dDayLabel, mealLabel].filter(Boolean).join(' · ');
+  ctx.fillStyle = isPink ? '#9d174d' : '#71717a';
+  ctx.font = '700 20px "Space Mono", monospace';
+  ctx.fillText(dateStr, cardMarginX + 40, cardY + 95);
 
-  ctx.fillStyle = isPink ? '#be185d' : '#71717a';
-  ctx.font = '700 22px "Space Mono", monospace';
+  // 3. 우측 칼로리 뱃지
   ctx.textAlign = 'right';
-  ctx.fillText(badgeText ? `${badgeText} | ${dateStr}` : dateStr, cardMarginX + cardWidth - 40, cardY + 62);
+  ctx.fillStyle = isPink ? '#e11d48' : '#18181b';
+  const calFontSize = displayCaloriesText.length > 5 ? 64 : 80;
+  ctx.font = `900 ${calFontSize}px "Space Mono", sans-serif`;
+  ctx.fillText(displayCaloriesText, cardMarginX + cardWidth - 40, cardY + 75);
 
-  // 메뉴명 & 중량 (자동 줄바꿈)
-  ctx.setLineDash([]);
-  ctx.fillStyle = isPink ? '#831843' : '#09090b';
-  const maxReceiptTitleW = cardWidth - 80 - 270;
-  const receiptTitleFontSize = nutrition.name.length > 20 ? 32 : nutrition.name.length > 12 ? 38 : 46;
-  ctx.font = `800 ${receiptTitleFontSize}px "Noto Sans KR", sans-serif`;
+  ctx.fillStyle = isPink ? '#9d174d' : '#71717a';
+  ctx.font = '800 26px "Space Mono", monospace';
+  ctx.fillText(caloriesUnitText, cardMarginX + cardWidth - 40, cardY + 115);
+
+  // 4. 메뉴명
+  const titleFontSize = nutrition.name.length > 20 ? 38 : nutrition.name.length > 12 ? 44 : 50;
+  ctx.fillStyle = isPink ? '#500724' : '#09090b';
+  ctx.font = `900 ${titleFontSize}px "Noto Sans KR", sans-serif`;
   ctx.textAlign = 'left';
 
-  // 메뉴명 단어 분할 렌더링
+  const maxTitleW = cardWidth - 80 - 160;
   const words = nutrition.name.split(' ');
   const titleLines: string[] = [];
   let curLine = '';
-
   for (let n = 0; n < words.length; n++) {
     const testLine = curLine + words[n] + ' ';
-    const testW = ctx.measureText(testLine).width;
-    if (testW > maxReceiptTitleW && n > 0) {
+    if (ctx.measureText(testLine).width > maxTitleW && n > 0) {
       titleLines.push(curLine.trim());
       curLine = words[n] + ' ';
     } else {
@@ -97,25 +91,15 @@ export function renderReceiptTemplate({
     titleLines.push(curLine.trim());
   }
 
+  const titleStartY = cardY + 165;
   titleLines.slice(0, 2).forEach((line, idx) => {
-    ctx.fillText(line, cardMarginX + 40, cardY + 152 + idx * (receiptTitleFontSize + 6));
+    ctx.fillText(line, cardMarginX + 40, titleStartY + idx * (titleFontSize + 8));
   });
 
-  const receiptTitleOffset = titleLines.length > 1 ? receiptTitleFontSize + 4 : 0;
+  const receiptTitleOffset = titleLines.length > 1 ? titleFontSize + 8 : 0;
   ctx.fillStyle = isPink ? '#9d174d' : '#71717a';
   ctx.font = '500 24px "Noto Sans KR", sans-serif';
-  ctx.fillText(nutrition.serving_size || '1인분', cardMarginX + 40, cardY + 195 + receiptTitleOffset);
-
-  // 칼로리 빅 텍스트 (우측 강조)
-  ctx.textAlign = 'right';
-  ctx.fillStyle = isPink ? '#e11d48' : '#dc2626';
-  const calFontSize = displayCaloriesText.length > 5 ? 54 : 68;
-  ctx.font = `900 ${calFontSize}px "Space Mono", sans-serif`;
-  ctx.fillText(displayCaloriesText, cardMarginX + cardWidth - 40, cardY + 175);
-
-  ctx.fillStyle = isPink ? '#9d174d' : '#71717a';
-  ctx.font = '700 24px "Space Mono", monospace';
-  ctx.fillText(caloriesUnitText, cardMarginX + cardWidth - 40, cardY + 208);
+  ctx.fillText(nutrition.serving_size || '1인분', cardMarginX + 40, titleStartY + titleFontSize + receiptTitleOffset + 4);
 
   // 유머 모드 스탬프 (있을 경우)
   if (humorTopBadge) {
@@ -127,6 +111,11 @@ export function renderReceiptTemplate({
     ctx.textAlign = 'center';
     ctx.fillText(`✨ ${humorTopBadge}`, 0, 0);
     ctx.restore();
+  }
+
+  // 테마 전용 시그니처 도장 (스내피 or 버디)
+  if (portion.theme === 'snappy' || portion.theme === 'buddy') {
+    renderPersonaStamp(ctx, cardMarginX + cardWidth - 85, cardY + 165, portion.theme, 0.85);
   }
 
   // 중간 실선
@@ -166,10 +155,11 @@ export function renderReceiptTemplate({
   ctx.roundRect(cardMarginX + 40, commentY, cardWidth - 80, 72, 14);
   ctx.fill();
 
+  const commentText = themedComment || nutrition.diet_comment;
   ctx.fillStyle = isPink ? '#831843' : '#27272a';
   ctx.font = '700 24px "Noto Sans KR", sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText(`“ ${nutrition.diet_comment} ”`, cardMarginX + cardWidth / 2, commentY + 45);
+  ctx.fillText(`“ ${commentText} ”`, cardMarginX + cardWidth / 2, commentY + 45);
 
   // 하단 바코드 그래픽
   const barcodeY = cardY + 515;

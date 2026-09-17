@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { NutritionItem, PortionModifier, StampTemplate, AspectRatio, MealType, HumorMode, StickerId } from '../types/diet';
 import { Edit3, Sparkles, SlidersHorizontal, Sun, Moon, Sunrise, Coffee, Pizza, Crown, Tag } from 'lucide-react';
 import { EditNutritionModal } from './EditNutritionModal';
-import { STICKER_DEFINITIONS } from '../canvas/stickers/drawStickers';
+import { STICKER_DEFINITIONS, THEME_STICKERS_MAP } from '../canvas/stickers/drawStickers';
+import { PERSONA_THEMES_LIST, PERSONA_THEMES } from '../canvas/themes/themeHelper';
+import { PersonaTheme } from '../types/diet';
 import { TEMPLATES_LIST } from '../canvas/templates/types';
 
 interface PortionChipsProps {
@@ -47,18 +49,9 @@ export const PortionChips: React.FC<PortionChipsProps> = ({
     { mode: 'cardio', label: '공복유산소각 💦' },
   ];
 
-
-  // 인스타 감성 퀵 스티커 리스트 (6종 기본 + 마스코트 듀오 2종)
-  const availableStickers: StickerId[] = [
-    'today_done',
-    'clean_diet',
-    'cheating_day',
-    'high_protein',
-    'fasting',
-    'no_sugar',
-    'snappy_cheer',
-    'buddy_walk',
-  ];
+  // 활성 페르소나 테마 및 테마별 6종 전용 스티커 팩
+  const currentTheme: PersonaTheme = portion.theme || 'seongsu';
+  const availableStickers: StickerId[] = THEME_STICKERS_MAP[currentTheme] || THEME_STICKERS_MAP.seongsu;
 
   const handleToggleSticker = (id: StickerId) => {
     const current = portion.stickers || [];
@@ -101,7 +94,42 @@ export const PortionChips: React.FC<PortionChipsProps> = ({
         onSave={onNutritionChange}
       />
 
-      {/* 2. 끼니(Meal) 선택 1초 칩 바 */}
+      {/* 2. 3대 페르소나 감성 테마 (성수동 / 뚱냥이 / 댕댕이) */}
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between text-[11px] text-neutral-400 px-1">
+          <span className="font-semibold text-neutral-300 whitespace-nowrap">감성 테마 & 세계관:</span>
+          <span className="text-neutral-500 text-[10px] whitespace-nowrap">말투·도장·스티커 일괄 전환</span>
+        </div>
+        <div className="grid grid-cols-3 gap-1.5">
+          {PERSONA_THEMES_LIST.map((th) => {
+            const isSelected = currentTheme === th.id;
+            return (
+              <button
+                key={th.id}
+                type="button"
+                onClick={() => {
+                  onPortionChange({ ...portion, theme: th.id });
+                  if (th.defaultTemplate) onTemplateChange(th.defaultTemplate);
+                }}
+                className={`py-2 px-1 rounded-xl text-xs font-bold flex items-center justify-center gap-1 border transition-all active:scale-95 whitespace-nowrap ${
+                  isSelected
+                    ? th.id === 'snappy'
+                      ? 'bg-rose-500 text-white border-rose-400 shadow-md shadow-rose-500/20'
+                      : th.id === 'buddy'
+                      ? 'bg-amber-500 text-neutral-950 border-amber-400 shadow-md shadow-amber-500/20'
+                      : 'bg-neutral-100 text-neutral-950 border-white shadow-md'
+                    : 'bg-neutral-900/90 text-neutral-400 border-neutral-800 hover:text-neutral-200'
+                }`}
+              >
+                <span>{th.emoji}</span>
+                <span className="truncate">{th.name}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 3. 끼니(Meal) 선택 1초 칩 바 */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between text-[11px] text-neutral-400 px-1">
           <span className="font-semibold text-neutral-300 whitespace-nowrap">끼니 선택:</span>
@@ -304,16 +332,17 @@ export const PortionChips: React.FC<PortionChipsProps> = ({
           </span>
           <span className="text-neutral-500 text-[10px]">다중 선택 가능</span>
         </div>
-        <div className="grid grid-cols-4 gap-1">
+        <div className="grid grid-cols-3 gap-1.5">
           {availableStickers.map((id) => {
             const meta = STICKER_DEFINITIONS[id];
+            if (!meta) return null;
             const isChecked = (portion.stickers || []).includes(id);
             return (
               <button
                 key={id}
                 type="button"
                 onClick={() => handleToggleSticker(id)}
-                className={`py-1.5 px-1 rounded-xl text-[11px] font-bold border transition-all active:scale-95 flex items-center justify-center gap-0.5 whitespace-nowrap ${
+                className={`py-2 px-1.5 rounded-xl text-xs font-bold border transition-all active:scale-95 flex items-center justify-center gap-1 whitespace-nowrap ${
                   isChecked
                     ? 'bg-neutral-800 text-white border-rose-500 shadow-md ring-1 ring-rose-500/50'
                     : 'bg-neutral-900/90 text-neutral-400 border-neutral-800 hover:text-neutral-200'
