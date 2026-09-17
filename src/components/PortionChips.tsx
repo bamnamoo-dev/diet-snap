@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { NutritionItem, PortionModifier, StampTemplate, AspectRatio, MealType, HumorMode } from '../types/diet';
-import { Edit3, Sparkles, SlidersHorizontal, Sun, Moon, Sunrise, Coffee, Pizza, Crown } from 'lucide-react';
+import { NutritionItem, PortionModifier, StampTemplate, AspectRatio, MealType, HumorMode, StickerId } from '../types/diet';
+import { Edit3, Sparkles, SlidersHorizontal, Sun, Moon, Sunrise, Coffee, Pizza, Crown, Tag } from 'lucide-react';
 import { EditNutritionModal } from './EditNutritionModal';
+import { STICKER_DEFINITIONS } from '../canvas/stickers/drawStickers';
 
 interface PortionChipsProps {
   portion: PortionModifier;
@@ -45,13 +46,32 @@ export const PortionChips: React.FC<PortionChipsProps> = ({
     { mode: 'cardio', label: '공복유산소각 💦' },
   ];
 
-  // 템플릿 목록
+  // 템플릿 목록 (총 6종으로 확장)
   const templates: { id: StampTemplate; name: string; isPro?: boolean }[] = [
     { id: 'receipt', name: '🧾 성수 영수증' },
     { id: 'pink_receipt', name: '🌸 핑크 영수증', isPro: true },
     { id: 'polaroid', name: '📷 폴라로이드' },
     { id: 'vintage_ticket', name: '🎫 빈티지 티켓', isPro: true },
+    { id: 'magazine', name: '✨ 보그 매거진', isPro: true },
+    { id: 'y2k', name: '📼 Y2K 필름', isPro: true },
   ];
+
+  // 인스타 감성 퀵 스티커 리스트
+  const availableStickers: StickerId[] = [
+    'today_done',
+    'clean_diet',
+    'cheating_day',
+    'high_protein',
+    'fasting',
+    'no_sugar',
+  ];
+
+  const handleToggleSticker = (id: StickerId) => {
+    const current = portion.stickers || [];
+    const exists = current.includes(id);
+    const updated = exists ? current.filter((s) => s !== id) : [...current, id];
+    onPortionChange({ ...portion, stickers: updated });
+  };
 
   return (
     <div className="w-full space-y-3.5 pt-1 font-sans">
@@ -247,15 +267,15 @@ export const PortionChips: React.FC<PortionChipsProps> = ({
         )}
       </div>
 
-      {/* 5. 템플릿 선택기 (4종) */}
+      {/* 5. 템플릿 선택기 (6종) */}
       <div className="space-y-1.5 pt-0.5">
         <div className="flex items-center justify-between text-[11px] text-neutral-400 px-1">
-          <span className="font-semibold text-neutral-300 whitespace-nowrap">스탬프 디자인 템플릿:</span>
+          <span className="font-semibold text-neutral-300 whitespace-nowrap">스탬프 템플릿 (6종):</span>
           <span className="text-amber-400 text-[10px] font-medium flex items-center gap-0.5 whitespace-nowrap">
             <Crown className="w-3 h-3 shrink-0" /> Pro 한정판 포함
           </span>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+        <div className="grid grid-cols-3 gap-1.5">
           {templates.map((tpl) => {
             const isSelected = template === tpl.id;
             return (
@@ -263,18 +283,51 @@ export const PortionChips: React.FC<PortionChipsProps> = ({
                 key={tpl.id}
                 type="button"
                 onClick={() => onTemplateChange(tpl.id)}
-                className={`py-2 px-2 text-xs font-bold rounded-xl border transition-all flex items-center justify-center gap-1 active:scale-95 whitespace-nowrap ${
+                className={`py-2 px-1.5 text-xs font-bold rounded-xl border transition-all flex items-center justify-center gap-1 active:scale-95 whitespace-nowrap ${
                   isSelected
                     ? 'bg-neutral-100 text-neutral-950 border-white shadow-md'
                     : 'bg-neutral-900/90 text-neutral-300 border-neutral-800 hover:bg-neutral-850'
                 }`}
               >
-                <span className="whitespace-nowrap">{tpl.name}</span>
+                <span className="truncate">{tpl.name}</span>
                 {tpl.isPro && (
-                  <span className="text-[9px] px-1 rounded bg-amber-400/20 text-amber-300 font-mono shrink-0">
+                  <span className="text-[8px] px-1 py-0.2 rounded bg-amber-400/20 text-amber-300 font-mono shrink-0">
                     PRO
                   </span>
                 )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 6. 인스타 감성 퀵 스티커 데코 바 (원터치 부착) */}
+      <div className="space-y-1.5 pt-0.5">
+        <div className="flex items-center justify-between text-[11px] text-neutral-400 px-1">
+          <span className="flex items-center gap-1 font-semibold text-neutral-300">
+            <Tag className="w-3 h-3 text-rose-400" />
+            인스타 데코 스티커:
+          </span>
+          <span className="text-neutral-500 text-[10px]">다중 선택 가능</span>
+        </div>
+        <div className="grid grid-cols-3 gap-1.5">
+          {availableStickers.map((id) => {
+            const meta = STICKER_DEFINITIONS[id];
+            const isChecked = (portion.stickers || []).includes(id);
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => handleToggleSticker(id)}
+                className={`py-1.5 px-1.5 rounded-xl text-xs font-bold border transition-all active:scale-95 flex items-center justify-center gap-1 whitespace-nowrap ${
+                  isChecked
+                    ? 'bg-neutral-800 text-white border-rose-500 shadow-md ring-1 ring-rose-500/50'
+                    : 'bg-neutral-900/90 text-neutral-400 border-neutral-800 hover:text-neutral-200'
+                }`}
+              >
+                <span>{meta.emoji}</span>
+                <span className="truncate">{meta.label}</span>
+                {isChecked && <span className="text-rose-400 text-[10px]">✓</span>}
               </button>
             );
           })}

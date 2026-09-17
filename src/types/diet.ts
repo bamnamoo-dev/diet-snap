@@ -28,10 +28,20 @@ export interface PortionModifier {
   mealType?: MealType;  // 아침, 점심, 저녁, 간식, 치팅
   humorMode?: HumorMode; // 유머 스탬프 모드 ('none', 'zero_cal', 'cheating', 'cardio')
   dDay?: number;        // Day N (디데이)
+  stickers?: StickerId[]; // 인스타 감성 퀵 스티커 (다중 선택 가능)
 }
 
-export type StampTemplate = 'receipt' | 'polaroid' | 'pink_receipt' | 'vintage_ticket';
+export type StampTemplate = 'receipt' | 'polaroid' | 'pink_receipt' | 'vintage_ticket' | 'magazine' | 'y2k';
 export type AspectRatio = '9:16' | '1:1';
+
+export type StickerId = 'today_done' | 'clean_diet' | 'cheating_day' | 'high_protein' | 'fasting' | 'no_sugar';
+
+export interface StickerItem {
+  id: StickerId;
+  label: string;
+  emoji: string;
+  color: string;
+}
 
 export interface PhotoTransform {
   zoom: number;    // 확대 배율 (1.0 ~ 3.0)

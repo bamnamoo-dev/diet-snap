@@ -677,13 +677,15 @@ export const App: React.FC = () => {
 
           {/* 하단 통합 컨트롤러 바 (스크롤 0초 인터랙션) */}
           <div className="w-full shrink-0 space-y-2 pt-1 pb-1">
-            {/* 1단: 템플릿 4종 탭 (캔버스 바로 밑 밀착 배치) */}
-            <div className="grid grid-cols-4 gap-1 bg-neutral-900/90 p-1 rounded-2xl border border-neutral-800/90 shadow-sm">
+            {/* 1단: 템플릿 6종 탭 (캔버스 바로 밑 밀착 배치) */}
+            <div className="grid grid-cols-6 gap-0.5 bg-neutral-900/90 p-1 rounded-2xl border border-neutral-800/90 shadow-sm">
               {[
-                { id: 'receipt' as StampTemplate, label: '🧾 성수 영수증' },
-                { id: 'pink_receipt' as StampTemplate, label: '🌸 핑크 라벨', isPro: true },
-                { id: 'polaroid' as StampTemplate, label: '📷 폴라로이드' },
-                { id: 'vintage_ticket' as StampTemplate, label: '🎫 빈티지 티켓', isPro: true },
+                { id: 'receipt' as StampTemplate, label: '🧾 영수증' },
+                { id: 'pink_receipt' as StampTemplate, label: '🌸 핑크', isPro: true },
+                { id: 'polaroid' as StampTemplate, label: '📷 폴라' },
+                { id: 'vintage_ticket' as StampTemplate, label: '🎫 티켓', isPro: true },
+                { id: 'magazine' as StampTemplate, label: '✨ 보그', isPro: true },
+                { id: 'y2k' as StampTemplate, label: '📼 Y2K', isPro: true },
               ].map((tpl) => (
                 <button
                   key={tpl.id}
@@ -694,7 +696,7 @@ export const App: React.FC = () => {
                     }
                     setTemplate(tpl.id);
                   }}
-                  className={`py-2 px-1 text-[11px] font-bold rounded-xl transition active:scale-95 flex items-center justify-center gap-0.5 whitespace-nowrap ${
+                  className={`py-2 px-0.5 text-[10.5px] font-bold rounded-xl transition active:scale-95 flex items-center justify-center gap-0.5 whitespace-nowrap ${
                     template === tpl.id
                       ? 'bg-neutral-100 text-neutral-950 shadow-sm'
                       : 'text-neutral-400 hover:text-white'
@@ -768,6 +770,34 @@ export const App: React.FC = () => {
                     {p.label.split(' ')[0]}
                   </button>
                 ))}
+
+                <span className="w-px h-3.5 bg-neutral-800 shrink-0 mx-0.5" />
+
+                {/* 퀵 인스타 스티커 토글 */}
+                {[
+                  { id: 'today_done' as const, label: '오식완 ⭕' },
+                  { id: 'clean_diet' as const, label: '클린 🥗' },
+                  { id: 'high_protein' as const, label: '단백 🥩' },
+                ].map((st) => {
+                  const isChecked = (portion.stickers || []).includes(st.id);
+                  return (
+                    <button
+                      key={st.id}
+                      onClick={() => {
+                        const cur = portion.stickers || [];
+                        const next = isChecked ? cur.filter((s) => s !== st.id) : [...cur, st.id];
+                        handlePortionChange({ ...portion, stickers: next });
+                      }}
+                      className={`py-1 px-2 rounded-lg text-[10px] font-bold whitespace-nowrap border transition active:scale-95 ${
+                        isChecked
+                          ? 'bg-rose-600 text-white border-rose-400 shadow-sm'
+                          : 'bg-neutral-900 text-neutral-400 border-neutral-800 hover:text-neutral-200'
+                      }`}
+                    >
+                      {st.label}
+                    </button>
+                  );
+                })}
               </div>
 
               {/* 수치 및 끼니 수정 모달 버튼 */}
