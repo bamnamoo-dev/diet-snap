@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { SavedDietRecord } from '../utils/dietStorage';
+import { SavedDietRecord, saveDietRecord } from '../utils/dietStorage';
 import { 
   Camera, 
   Trash2, 
@@ -7,18 +7,20 @@ import {
   Calendar, 
   Flame, 
   Clock, 
-  Sparkles,
-  Utensils,
-  Layers,
-  Download,
-  Share2,
-  X,
-  FileText,
-  Lock,
-  Crown,
-  ClipboardCheck,
-  CalendarCheck
+  Sparkles, 
+  Utensils, 
+  Layers, 
+  Download, 
+  Share2, 
+  X, 
+  FileText, 
+  Lock, 
+  Crown, 
+  ClipboardCheck, 
+  CalendarCheck,
+  Images
 } from 'lucide-react';
+import { getTodayDateString, formatDateKey } from '../utils/subscription';
 
 interface GalleryViewProps {
   records: SavedDietRecord[];
@@ -42,12 +44,18 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
   const [isTrainerReportOpen, setIsTrainerReportOpen] = useState(false);
   const [isWeeklyWrapOpen, setIsWeeklyWrapOpen] = useState(false);
 
+  // 📸 영수증 사진첩 일괄 저장 상태
+  const [isBulkSaving, setIsBulkSaving] = useState(false);
+  const [bulkSaveProgress, setBulkSaveProgress] = useState<string>('');
+  const bulkCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
   const dailyCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const trainerCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const weeklyCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // 오늘 날짜 키 (YYYY-MM-DD)
-  const todayKey = new Date().toISOString().slice(0, 10);
+  // 🇰🇷 오늘 날짜 키 (YYYY-MM-DD) - KST 로컬 기준 (오전 9시 이전 아침 식단 분리 방어)
+  const todayKey = getTodayDateString();
 
   // 오늘 기록 통계 계산
   const todayRecords = records.filter((r) => r.dateKey === todayKey);
@@ -72,8 +80,9 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
     return sum + Math.round(r.nutrition.fat * scale);
   }, 0);
 
-  // 최근 7일(주간) 기록 통계 계산
-  const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  // 🇰🇷 최근 7일(주간) 기록 통계 계산 - KST 로컬 기준
+  const weekDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const oneWeekAgo = formatDateKey(weekDate);
   const weekRecords = records.filter((r) => r.dateKey >= oneWeekAgo);
   const weekTotalCalories = weekRecords.reduce((sum, r) => {
     const scale = r.portion?.scale ?? 1.0;
@@ -691,6 +700,229 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
     }, 'image/jpeg', 0.95);
   };
 
+  // 단일 식단 레코드를 감성 영수증 캔버스로 고화질(1080x1920) 렌더링하는 헬퍼
+  const renderSingleStampRecord = async (
+    canvas: HTMLCanvasElement,
+    record: SavedDietRecord
+  ): Promise<Blob | null> => {
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+
+    canvas.width = 1080;
+    canvas.height = 1920;
+
+    // 1. 다크 배경
+    ctx.fillStyle = '#0f1014';
+    ctx.fillRect(0, 0, 1080, 1920);
+
+    // 2. 상단 음식 사진 (0 ~ 1360px)
+    await drawImageCover(ctx, record.imageSrc, 0, 0, 1080, 1360, 0);
+
+    // 3. 하단 스탬프 종이 영역 (1360 ~ 1920px) - 순백색 고시인성
+    const paperY = 1360;
+    const paperH = 560;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, paperY, 1080, paperH);
+
+    // 상단 점선 분리선
+    ctx.strokeStyle = '#d4d4d8';
+    ctx.lineWidth = 4;
+    ctx.setLineDash([12, 12]);
+    ctx.beginPath();
+    ctx.moveTo(40, paperY + 20);
+    ctx.lineTo(1040, paperY + 20);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 날짜 & 시간 & 끼니 라벨
+    const mealLabelMap: Record<string, string> = {
+      breakfast: '아침 BREAKFAST 🌅',
+      lunch: '점심 LUNCH ☀️',
+      dinner: '저녁 DINNER 🌙',
+      snack: '간식 SNACK 🍪',
+      cheating: '치팅 CHEATING 🍕',
+    };
+    const mealText = record.portion?.mealType ? mealLabelMap[record.portion.mealType] || '식단' : '식단';
+
+    ctx.fillStyle = '#f43f5e';
+    ctx.font = '800 24px "Space Mono", monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(`${record.dateStr || todayKey} · ${mealText}`, 60, paperY + 65);
+
+    // 메뉴명
+    ctx.fillStyle = '#111827';
+    ctx.font = '900 48px "Noto Sans KR", sans-serif';
+    const menuTitle = record.nutrition.name.length > 18 ? record.nutrition.name.slice(0, 17) + '...' : record.nutrition.name;
+    ctx.fillText(menuTitle, 60, paperY + 130);
+
+    // 칼로리 빅 텍스트
+    const scale = record.portion?.scale ?? 1.0;
+    const soupScale = record.portion?.excludeSoup ? 0.85 : 1.0;
+    const finalCal = Math.round(record.nutrition.calories * scale * soupScale);
+    const finalCarbs = Math.round(record.nutrition.carbs * scale);
+    const finalProtein = Math.round(record.nutrition.protein * scale);
+    const finalFat = Math.round(record.nutrition.fat * scale);
+
+    ctx.fillStyle = '#111827';
+    ctx.font = '900 86px "Space Mono", sans-serif';
+    ctx.fillText(`${finalCal}`, 60, paperY + 235);
+
+    const calWidth = ctx.measureText(`${finalCal}`).width;
+    ctx.fillStyle = '#71717a';
+    ctx.font = '800 32px "Space Mono", monospace';
+    ctx.fillText('KCAL', 60 + calWidth + 16, paperY + 235);
+
+    // 탄단지 3분할 뱃지
+    const badgeY = paperY + 285;
+    const badgeW = 290;
+    const badgeH = 110;
+    const badgeGap = 25;
+
+    const macros = [
+      { label: '탄수화물', val: `${finalCarbs}g`, color: '#18181b', bg: '#f4f4f5' },
+      { label: '단백질', val: `${finalProtein}g`, color: '#f43f5e', bg: '#fff1f2' },
+      { label: '지방', val: `${finalFat}g`, color: '#0284c7', bg: '#f0f9ff' },
+    ];
+
+    macros.forEach((m, idx) => {
+      const bx = 60 + idx * (badgeW + badgeGap);
+      ctx.fillStyle = m.bg;
+      ctx.beginPath();
+      ctx.roundRect(bx, badgeY, badgeW, badgeH, 18);
+      ctx.fill();
+
+      ctx.fillStyle = '#71717a';
+      ctx.font = '700 22px "Noto Sans KR", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(m.label, bx + badgeW / 2, badgeY + 42);
+
+      ctx.fillStyle = m.color;
+      ctx.font = '900 36px "Space Mono", monospace';
+      ctx.fillText(m.val, bx + badgeW / 2, badgeY + 88);
+    });
+
+    // 하단 워터마크
+    const barY = paperY + 440;
+    ctx.strokeStyle = '#27272a';
+    ctx.lineWidth = 3;
+    for (let x = 60; x < 360; x += 10) {
+      ctx.beginPath();
+      ctx.moveTo(x, barY);
+      ctx.lineTo(x, barY + 45);
+      ctx.stroke();
+    }
+
+    ctx.fillStyle = '#71717a';
+    ctx.font = '700 20px "Space Mono", monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText('DIETSNAP® OFFICIAL ARCHIVE', 1020, barY + 30);
+
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.95);
+    });
+  };
+
+  // 📸 사진첩 일괄 저장 핸들러
+  const handleBulkSaveToPhotos = async () => {
+    if (records.length === 0) {
+      alert('저장할 식단 기록이 없습니다. 먼저 식단을 촬영해보세요! 📸');
+      return;
+    }
+
+    setIsBulkSaving(true);
+    setBulkSaveProgress(`0 / ${records.length}장 생성 중...`);
+
+    const canvas = bulkCanvasRef.current || document.createElement('canvas');
+    bulkCanvasRef.current = canvas;
+
+    const filesToShare: File[] = [];
+
+    try {
+      for (let i = 0; i < records.length; i++) {
+        const record = records[i];
+        setBulkSaveProgress(`${i + 1} / ${records.length}장 저장 중...`);
+
+        const blob = await renderSingleStampRecord(canvas, record);
+        if (!blob) continue;
+
+        const safeName = record.nutrition.name.replace(/[^a-zA-Z0-9가-힣]/g, '_').slice(0, 15);
+        const fileName = `DietSnap_${record.dateKey || todayKey}_${i + 1}_${safeName}.jpg`;
+        const file = new File([blob], fileName, { type: 'image/jpeg' });
+        filesToShare.push(file);
+
+        // 브라우저 다운로드
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.download = fileName;
+        link.href = url;
+        link.click();
+        await new Promise((res) => setTimeout(res, 250));
+        URL.revokeObjectURL(url);
+      }
+
+      // 모바일 다중 공유 시트 지원 시
+      if (navigator.canShare && filesToShare.length > 0 && navigator.canShare({ files: filesToShare })) {
+        try {
+          await navigator.share({
+            files: filesToShare,
+            title: 'DietSnap 오식완 영수증 앨범',
+            text: `총 ${records.length}장의 오식완 영수증 사진첩에 저장 ✨`,
+          });
+        } catch {}
+      }
+
+      setBulkSaveProgress(`✨ 총 ${records.length}장의 영수증이 갤러리에 저장되었습니다!`);
+      setTimeout(() => {
+        setIsBulkSaving(false);
+        setBulkSaveProgress('');
+      }, 3500);
+    } catch (e) {
+      console.error('Bulk save failed', e);
+      setIsBulkSaving(false);
+      setBulkSaveProgress('');
+      alert('일괄 저장 처리 중 문제가 발생했습니다. 개별 사진에서 다운로드를 시도해주세요.');
+    }
+  };
+
+  // 💾 JSON 파일 백업 다운로드
+  const handleExportJSON = () => {
+    if (records.length === 0) {
+      alert('저장할 식단 기록이 없습니다.');
+      return;
+    }
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(records, null, 2));
+    const link = document.createElement('a');
+    link.download = `DietSnap_식단데이터백업_${todayKey}.json`;
+    link.href = dataStr;
+    link.click();
+  };
+
+  // 📂 JSON 파일 복원
+  const handleImportJSON = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 25 * 1024 * 1024) {
+      alert('백업 파일 용량이 너무 큽니다. (최대 25MB 허용)');
+      if (e.target) e.target.value = '';
+      return;
+    }
+    try {
+      const text = await file.text();
+      const imported: SavedDietRecord[] = JSON.parse(text);
+      if (Array.isArray(imported) && imported.length > 0) {
+        for (const r of imported) {
+          await saveDietRecord(r);
+        }
+        alert(`✨ ${imported.length}개의 식단 기록이 성공적으로 복원되었습니다!`);
+        window.location.reload();
+      } else {
+        alert('올바른 백업 파일 형식이 아닙니다.');
+      }
+    } catch (err) {
+      alert('파일을 읽는 중 오류가 발생했습니다.');
+    }
+  };
+
   return (
     <div className="w-full max-w-md px-4 pt-2 pb-16 flex flex-col items-center gap-4 font-sans">
       
@@ -789,6 +1021,45 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
               </span>
             )}
           </button>
+        </div>
+
+        {/* 📸 킬러 백업: 사진첩에 영수증 일괄 저장 & 데이터 백업 바 */}
+        <div className="mt-3 pt-2.5 border-t border-white/5 flex flex-col gap-2">
+          <button
+            onClick={handleBulkSaveToPhotos}
+            disabled={isBulkSaving || records.length === 0}
+            className="w-full py-2.5 px-3 rounded-2xl bg-neutral-800/90 hover:bg-neutral-800 border border-neutral-700/80 text-neutral-100 hover:text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm active:scale-[0.98] transition disabled:opacity-50"
+          >
+            <Images className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span className="whitespace-nowrap">
+              {isBulkSaving ? bulkSaveProgress : `📸 영수증 사진첩에 일괄 저장 (${records.length}장)`}
+            </span>
+          </button>
+
+          {/* 소형 보조 데이터 백업/복원 링크 */}
+          <div className="flex items-center justify-between px-1 text-[10px] text-neutral-500">
+            <span>기기 변경/캐시 삭제 대비:</span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleExportJSON}
+                className="hover:text-neutral-300 underline transition"
+                title="식단 데이터 파일로 다운로드"
+              >
+                데이터 백업
+              </button>
+              <span>·</span>
+              <label className="hover:text-neutral-300 underline transition cursor-pointer" title="백업 파일 불러오기">
+                복원하기
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".json"
+                  onChange={handleImportJSON}
+                  className="hidden"
+                />
+              </label>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -914,9 +1185,9 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                     </div>
 
                     <div className="pt-1.5 flex items-center justify-between">
-                      <div className="flex items-center gap-1 text-[11px] font-mono">
-                        <span className="font-extrabold text-amber-300">{finalCal} kcal</span>
-                        <span className="text-neutral-500 text-[10px]">
+                      <div className="flex items-center gap-1 text-[11px] font-mono whitespace-nowrap">
+                        <span className="font-extrabold text-amber-300 whitespace-nowrap">{finalCal} kcal</span>
+                        <span className="text-neutral-500 text-[10px] whitespace-nowrap">
                           (탄{finalCarbs}·단{finalProtein}·지{finalFat})
                         </span>
                       </div>

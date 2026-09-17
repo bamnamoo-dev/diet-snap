@@ -148,20 +148,20 @@ export const IntroView: React.FC<IntroViewProps> = ({
         </div>
       </div>
 
-      {/* 4-1. 내 식단 갤러리 바로가기 버튼 (기록이 있는 경우 강조) */}
+      {/* 4-1. 내 식단 갤러리 바로가기 버튼 */}
       {onOpenHistoryClick && (
         <button
           onClick={onOpenHistoryClick}
-          className="w-full py-3 px-4 rounded-2xl bg-neutral-900/90 hover:bg-neutral-850 border border-neutral-800 hover:border-rose-500/40 text-neutral-200 flex items-center justify-between shadow-md transition active:scale-[0.98]"
+          className="w-full py-3 px-3.5 rounded-2xl bg-neutral-900/90 hover:bg-neutral-850 border border-neutral-800 hover:border-rose-500/40 text-neutral-200 flex items-center justify-between shadow-md transition active:scale-[0.98]"
         >
           <span className="flex items-center gap-2 text-xs font-bold text-white whitespace-nowrap">
             <span className="p-1 rounded-lg bg-rose-500/20 text-rose-400 shrink-0">
               <Receipt className="w-4 h-4" />
             </span>
-            <span className="whitespace-nowrap">내 오식완 기록 갤러리 보러가기</span>
+            <span className="whitespace-nowrap">내 식단 기록 갤러리</span>
           </span>
           <span className="text-xs font-mono text-rose-400 font-bold flex items-center gap-1 whitespace-nowrap shrink-0">
-            {historyCount > 0 ? `${historyCount}개의 기록` : '보관함'} <ArrowRight className="w-3.5 h-3.5" />
+            {historyCount > 0 ? `${historyCount}개 보관` : '보관함'} <ArrowRight className="w-3.5 h-3.5" />
           </span>
         </button>
       )}
@@ -205,11 +205,11 @@ export const IntroView: React.FC<IntroViewProps> = ({
                 <span className="text-xs font-bold text-neutral-200 line-clamp-1 group-hover:text-white transition-colors">
                   {preset.name}
                 </span>
-                <div className="flex items-center justify-between pt-1">
-                  <span className="text-[10px] text-neutral-400">
+                <div className="flex items-center justify-between pt-1 gap-1">
+                  <span className="text-[10px] text-neutral-400 whitespace-nowrap">
                     탄{preset.data.carbs}·단{preset.data.protein}·지{preset.data.fat}
                   </span>
-                  <span className="text-[10px] text-rose-400 font-semibold group-hover:translate-x-0.5 transition-transform">
+                  <span className="text-[10px] text-rose-400 font-semibold group-hover:translate-x-0.5 transition-transform whitespace-nowrap shrink-0">
                     체험 →
                   </span>
                 </div>

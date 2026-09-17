@@ -77,19 +77,19 @@ export const EditNutritionModal: React.FC<EditNutritionModalProps> = ({
               <Utensils className="w-3.5 h-3.5 text-rose-400 shrink-0" />
               <span>끼니 분류</span>
             </label>
-            <div className="grid grid-cols-5 gap-1.5">
+            <div className="grid grid-cols-5 gap-1">
               {MEAL_OPTIONS.map((opt) => (
                 <button
                   key={opt.id}
                   type="button"
                   onClick={() => setSelectedMeal(opt.id)}
-                  className={`py-2 px-1 rounded-xl text-xs font-bold transition flex flex-col items-center justify-center gap-0.5 border whitespace-nowrap ${
+                  className={`py-1.5 px-0.5 rounded-xl text-xs font-bold transition flex flex-col items-center justify-center gap-0.5 border whitespace-nowrap ${
                     selectedMeal === opt.id
                       ? 'bg-gradient-to-tr from-rose-500 to-amber-500 text-white border-rose-400 shadow-md shadow-rose-500/25 scale-[1.02]'
                       : 'bg-neutral-900 border-neutral-750 text-neutral-400 hover:text-neutral-200 hover:border-neutral-600'
                   }`}
                 >
-                  <span className="text-sm">{opt.icon}</span>
+                  <span className="text-sm leading-none">{opt.icon}</span>
                   <span className="text-[11px] whitespace-nowrap">{opt.label}</span>
                 </button>
               ))}

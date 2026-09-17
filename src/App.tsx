@@ -31,7 +31,9 @@ import {
   getRemainingCount, 
   canTakePhoto, 
   incrementDailyUsage, 
-  calculateFastingHours 
+  calculateFastingHours,
+  getDefaultMealTypeByTime,
+  formatDateKey
 } from './utils/subscription';
 import { ProModal } from './components/ProModal';
 import { EditNutritionModal } from './components/EditNutritionModal';
@@ -267,6 +269,21 @@ export const App: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // 🛡️ 중복 호출 방어 및 일일 잔여 횟수 가드
+    if (isAnalyzing) return;
+    if (!canTakePhoto()) {
+      setIsProModalOpen(true);
+      if (e.target) e.target.value = '';
+      return;
+    }
+
+    // 🛡️ 초대용량 파일(25MB 초과) 사전 차단 (모바일 브라우저 탭 크래시 방어)
+    if (file.size > 25 * 1024 * 1024) {
+      alert('사진 파일 용량이 너무 큽니다. (최대 25MB 지원)');
+      if (e.target) e.target.value = '';
+      return;
+    }
+
     try {
       setErrorMessage(null);
       setIsAnalyzing(true);
@@ -295,7 +312,10 @@ export const App: React.FC = () => {
       // 3. 실제 Gemini AI 백엔드 라우트 호출 (/api/analyze)
       const response = await fetch('/api/analyze', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-dietsnap-client': 'web-pwa-v1',
+        },
         body: JSON.stringify({ imageBase64: compressed.dataUrl }),
       });
 
@@ -322,7 +342,13 @@ export const App: React.FC = () => {
       setRemainingCount(getRemainingCount());
 
       setNutrition(aiResult);
-      const initialPortion = { scale: 1.0, excludeSoup: false };
+      // 🕒 시간대별 끼니 자동 감지 및 스마트 기본 지정 (수동 터치 0초)
+      const autoMealType = getDefaultMealTypeByTime(now);
+      const initialPortion: PortionModifier = { 
+        scale: 1.0, 
+        excludeSoup: false,
+        mealType: autoMealType,
+      };
       setPortion(initialPortion);
       setStatusMessage('✨ 분석 완료! 갤러리에 자동 저장되었습니다');
       setTimeout(() => setStatusMessage(''), 3500);
@@ -330,7 +356,8 @@ export const App: React.FC = () => {
       // 💾 4. 분석된 식단 즉시 IndexedDB 갤러리에 영구 자동 저장!
       const dateStr = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
       const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-      const dateKey = now.toISOString().slice(0, 10);
+      // 🇰🇷 KST 로컬 기준 dateKey (오전 9시 이전 아침 식단 분리 방어)
+      const dateKey = formatDateKey(now);
       const newId = `diet_${now.getTime()}`;
       const initialTransform: PhotoTransform = { zoom: 1.0, offsetX: 0, offsetY: 0 };
       setPhotoTransform(initialTransform);
@@ -557,33 +584,12 @@ export const App: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-1 shrink-0">
-          {/* 🗂️ 내 식단 갤러리 관리 버튼 (기록 개수 뱃지) */}
-          <button
-            onClick={() => changeView(currentView === 'gallery' ? 'editor' : 'gallery')}
-            className={`text-[11px] px-2 py-1 rounded-xl font-bold flex items-center gap-1 transition-all shadow-sm shrink-0 ${
-              currentView === 'gallery'
-                ? 'bg-rose-500 text-white shadow-rose-500/30'
-                : 'bg-neutral-850 text-neutral-300 border border-neutral-700 hover:text-white'
-            }`}
-            title="내 오식완 기록 갤러리"
-          >
-            <BookOpen className="w-3 h-3 shrink-0" />
-            <span className="whitespace-nowrap">내 기록</span>
-            {records.length > 0 && (
-              <span className={`text-[9px] px-1 rounded-full font-mono font-bold ${
-                currentView === 'gallery' ? 'bg-white text-rose-600' : 'bg-rose-500 text-white'
-              }`}>
-                {records.length}
-              </span>
-            )}
-          </button>
-
+        <div className="flex items-center gap-1.5 shrink-0">
           {/* ⛶ 전체화면 전환 버튼 */}
           <button
             onClick={handleToggleFullscreen}
             title="전체화면 전환"
-            className="p-1 rounded-lg bg-neutral-800/90 text-neutral-300 border border-neutral-700 hover:text-white transition active:scale-95 shrink-0"
+            className="p-1.5 rounded-lg bg-neutral-850 text-neutral-300 border border-neutral-700 hover:text-white transition active:scale-95 shrink-0"
           >
             <Maximize2 className="w-3.5 h-3.5" />
           </button>
@@ -591,7 +597,7 @@ export const App: React.FC = () => {
           {/* 👑 Pro 모달 오픈 버튼 */}
           <button
             onClick={() => setIsProModalOpen(true)}
-            className={`text-[11px] px-2 py-1 rounded-full font-bold flex items-center gap-1 transition-all shrink-0 ${
+            className={`text-[11px] px-2.5 py-1 rounded-full font-bold flex items-center gap-1 transition-all shrink-0 whitespace-nowrap ${
               isPro
                 ? 'bg-amber-400 text-neutral-950 shadow-md shadow-amber-400/20'
                 : 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-300 border border-amber-500/40 hover:border-amber-400'

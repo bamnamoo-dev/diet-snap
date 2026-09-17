@@ -1,6 +1,8 @@
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
+const MAX_BASE64_LENGTH = 7 * 1024 * 1024; // 약 5MB 허용
+
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
@@ -23,25 +25,47 @@ export default defineConfig(({ mode }) => {
             let body = '';
             req.on('data', (chunk) => {
               body += chunk;
+              if (body.length > MAX_BASE64_LENGTH) {
+                res.statusCode = 413;
+                res.setHeader('Content-Type', 'application/json');
+                res.end(JSON.stringify({ error: '이미지 용량이 너무 큽니다. (최대 5MB 허용)' }));
+                req.destroy();
+              }
             });
 
             req.on('end', async () => {
+              if (res.writableEnded) return;
+
               try {
                 const parsed = JSON.parse(body);
-                const imageBase64 = parsed.imageBase64;
-                if (!imageBase64) {
+                const imageBase64 = parsed?.imageBase64;
+                if (!imageBase64 || typeof imageBase64 !== 'string') {
                   res.statusCode = 400;
-                  res.end(JSON.stringify({ error: 'imageBase64 is required' }));
+                  res.setHeader('Content-Type', 'application/json');
+                  res.end(JSON.stringify({ error: '유효한 이미지 데이터가 필요합니다.' }));
+                  return;
+                }
+
+                if (imageBase64.length > MAX_BASE64_LENGTH) {
+                  res.statusCode = 413;
+                  res.setHeader('Content-Type', 'application/json');
+                  res.end(JSON.stringify({ error: '이미지 용량이 너무 큽니다. (최대 5MB 허용)' }));
                   return;
                 }
 
                 // data:image/webp;base64,... 에서 순수 base64 및 mimeType 추출
-                const mimeMatch = imageBase64.match(/^data:(image\/[a-zA-Z0-9+]+);base64,/);
-                const mimeType = mimeMatch ? mimeMatch[1] : 'image/webp';
-                const cleanBase64 = imageBase64.replace(/^data:image\/[a-zA-Z0-9+]+;base64,/, '');
+                const mimeMatch = imageBase64.match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,/);
+                const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+                const cleanBase64 = imageBase64.replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, '').trim();
+
+                if (!cleanBase64 || cleanBase64.length < 50) {
+                  res.statusCode = 400;
+                  res.setHeader('Content-Type', 'application/json');
+                  res.end(JSON.stringify({ error: '손상되었거나 유효하지 않은 이미지입니다.' }));
+                  return;
+                }
 
                 const apiKey = env.GEMINI_API_KEY;
-                // Gemini 3.5 Flash-Lite 단독 고정
                 const model = 'gemini-3.5-flash-lite';
 
                 if (!apiKey) {
@@ -77,36 +101,50 @@ export default defineConfig(({ mode }) => {
   ]
 }`;
 
-                const apiRes = await fetch(
-                  `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-                  {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      contents: [
-                        {
-                          parts: [
-                            { text: prompt },
-                            {
-                              inline_data: {
-                                mime_type: mimeType,
-                                data: cleanBase64,
-                              },
-                            },
-                          ],
-                        },
-                      ],
-                      generationConfig: {
-                        response_mime_type: 'application/json',
-                        temperature: 0.2,
+                // 18초 AbortController 타임아웃 가드
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 18000);
+
+                let apiRes: Response;
+                try {
+                  apiRes = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+                    {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'x-goog-api-key': apiKey,
                       },
-                    }),
-                  }
-                );
+                      signal: controller.signal,
+                      body: JSON.stringify({
+                        contents: [
+                          {
+                            parts: [
+                              { text: prompt },
+                              {
+                                inline_data: {
+                                  mime_type: mimeType,
+                                  data: cleanBase64,
+                                },
+                              },
+                            ],
+                          },
+                        ],
+                        generationConfig: {
+                          response_mime_type: 'application/json',
+                          temperature: 0.2,
+                        },
+                      }),
+                    }
+                  );
+                } finally {
+                  clearTimeout(timeoutId);
+                }
 
                 const data = await apiRes.json();
                 if (!apiRes.ok) {
-                  throw new Error(data.error?.message || 'Gemini API response error');
+                  console.error('Gemini API error:', data.error);
+                  throw new Error('Gemini API response error');
                 }
 
                 const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -116,14 +154,31 @@ export default defineConfig(({ mode }) => {
 
                 const jsonResult = JSON.parse(rawText);
 
+                // 방어적 데이터 정제
+                const sanitizedResult = {
+                  name: typeof jsonResult.name === 'string' ? jsonResult.name.slice(0, 100) : '식단 메뉴',
+                  serving_size: typeof jsonResult.serving_size === 'string' ? jsonResult.serving_size.slice(0, 50) : '1인분',
+                  calories: typeof jsonResult.calories === 'number' && !isNaN(jsonResult.calories) ? Math.round(jsonResult.calories) : 0,
+                  carbs: typeof jsonResult.carbs === 'number' && !isNaN(jsonResult.carbs) ? Math.round(jsonResult.carbs) : 0,
+                  protein: typeof jsonResult.protein === 'number' && !isNaN(jsonResult.protein) ? Math.round(jsonResult.protein) : 0,
+                  fat: typeof jsonResult.fat === 'number' && !isNaN(jsonResult.fat) ? Math.round(jsonResult.fat) : 0,
+                  diet_comment: typeof jsonResult.diet_comment === 'string' ? jsonResult.diet_comment.slice(0, 150) : '오늘도 맛있는 식사 완벽 기록! ✨',
+                  custom_chips: Array.isArray(jsonResult.custom_chips)
+                    ? jsonResult.custom_chips.slice(0, 6).map((c: any) => ({
+                        label: typeof c.label === 'string' ? c.label.slice(0, 30) : '보통',
+                        scale: typeof c.scale === 'number' && !isNaN(c.scale) ? Number(c.scale.toFixed(2)) : 1.0,
+                      }))
+                    : [],
+                };
+
                 res.statusCode = 200;
                 res.setHeader('Content-Type', 'application/json');
-                res.end(JSON.stringify(jsonResult));
+                res.end(JSON.stringify(sanitizedResult));
               } catch (err: any) {
-                console.error('Analyze API Error:', err);
+                console.error('[API/Analyze] Error:', err);
                 res.statusCode = 500;
                 res.setHeader('Content-Type', 'application/json');
-                res.end(JSON.stringify({ error: err.message || 'Internal Server Error' }));
+                res.end(JSON.stringify({ error: '식단 분석 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.' }));
               }
             });
           });

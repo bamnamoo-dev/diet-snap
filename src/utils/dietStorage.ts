@@ -60,15 +60,16 @@ export async function saveDietRecord(record: SavedDietRecord): Promise<void> {
     });
   } catch (err) {
     console.error('Failed to save to IndexedDB, fallback to localStorage', err);
-    // 폴백: LocalStorage에 최근 10개만 보관
+    // 폴백: LocalStorage 용량 초과(5MB) 방지를 위해 최근 3개만 보관
     try {
       const raw = localStorage.getItem('dietsnap_history_backup') || '[]';
       const list: SavedDietRecord[] = JSON.parse(raw);
       const filtered = list.filter((item) => item.id !== record.id);
       filtered.unshift(record);
-      localStorage.setItem('dietsnap_history_backup', JSON.stringify(filtered.slice(0, 10)));
+      // 최대 3개로 제한하여 QuotaExceeded 방어
+      localStorage.setItem('dietsnap_history_backup', JSON.stringify(filtered.slice(0, 3)));
     } catch (fallbackErr) {
-      console.warn('Fallback save failed:', fallbackErr);
+      console.warn('LocalStorage quota limit reached, ignoring fallback save:', fallbackErr);
     }
   }
 }
